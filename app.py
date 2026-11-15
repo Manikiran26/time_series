@@ -59,6 +59,7 @@ from analysis.billing_tariffs import (
     run_what_if_simulation
 )
 from utils.helpers import (
+    render_html,
     render_powertrack_header,
     render_summary_card,
     render_forecast_kpi_card,
@@ -77,16 +78,16 @@ st.markdown(get_powertrack_css(), unsafe_allow_html=True)
 # SIDEBAR: HOUSEHOLD SELECTION & NAVIGATION
 # =========================================================================
 with st.sidebar:
-    st.markdown("""
-    <div style="padding: 6px 0 16px 0;">
-        <div style="font-size: 1.7rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+    render_html("""
+    <div style="padding: 4px 0 14px 0;">
+        <div style="font-size: 1.65rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
             ⚡ PowerTrack
         </div>
         <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 500; margin-top: 2px;">
             Household Smart-Energy Analytics
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     # City filter
     city_filter = st.selectbox(
@@ -117,26 +118,26 @@ with st.sidebar:
     sub_meta = next((h for h in all_households if h['household_id'] == selected_hid), None)
     if sub_meta:
         grade_color = "#10b981" if sub_meta['quality_grade'] == 'A' else ("#f59e0b" if sub_meta['quality_grade'] == 'B' else "#ef4444")
-        st.markdown(f"""
-        <div style="background: rgba(30, 41, 59, 0.65); padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 22px;">
+        render_html(f"""
+        <div style="background: rgba(30, 41, 59, 0.65); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">Location:</span>
-                <span style="font-size: 0.85rem; font-weight: 600; color: #f8fafc;">{sub_meta['city']}, UP</span>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Location:</span>
+                <span style="font-size: 0.84rem; font-weight: 600; color: #f8fafc;">{sub_meta['city']}, UP</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">Record Span:</span>
-                <span style="font-size: 0.85rem; font-weight: 600; color: #38bdf8;">{sub_meta['recorded_days']} Days</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-size: 0.8rem; color: #94a3b8;">Record Span:</span>
+                <span style="font-size: 0.84rem; font-weight: 600; color: #38bdf8;">{sub_meta['recorded_days']} Days</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">Historical Avg:</span>
-                <span style="font-size: 0.85rem; font-weight: 600; color: #f8fafc;">{sub_meta['mean_kwh']:.2f} kWh/day</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-size: 0.8rem; color: #94a3b8;">Historical Avg:</span>
+                <span style="font-size: 0.84rem; font-weight: 600; color: #f8fafc;">{sub_meta['mean_kwh']:.2f} kWh/day</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">Data Integrity:</span>
-                <span style="font-size: 0.8rem; font-weight: 700; color: {grade_color}; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,0.05);">Grade {sub_meta['quality_grade']}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-size: 0.8rem; color: #94a3b8;">Data Integrity:</span>
+                <span style="font-size: 0.78rem; font-weight: 700; color: {grade_color}; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.05);">Grade {sub_meta['quality_grade']}</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
     # Navigation menu
     nav_options = [
@@ -153,13 +154,13 @@ with st.sidebar:
     selected_page = st.radio("Navigation", options=nav_options, label_visibility="collapsed")
 
     st.markdown("---")
-    st.markdown("""
+    render_html("""
     <div style="font-size: 0.74rem; color: #64748b; line-height: 1.45;">
         <b>Dataset:</b> CEEW Smart-Meter Study<br>
         <b>Source:</b> Harvard Dataverse (CC0 1.0)<br>
         <b>Tariff:</b> UPPCL LMV-1 Domestic Slabs
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 # =========================================================================
@@ -186,12 +187,12 @@ except Exception as e:
 render_powertrack_header(user_name=f"Household {selected_hid} • {meta['city']}")
 
 # Status Bar
-st.markdown("""
-<div style="background: rgba(15, 23, 42, 0.45); border-left: 3px solid #38bdf8; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; color: #94a3b8; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center;">
+render_html(f"""
+<div style="background: rgba(15, 23, 42, 0.45); border-left: 3px solid #38bdf8; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; color: #94a3b8; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
     <span>📡 <b>Empirical Smart-Meter Monitoring:</b> Continuous high-resolution telemetry (CEEW / Harvard Dataverse).</span>
-    <span style="color: #cbd5e1;">Active Unit: <b>{}</b> | City: <b>{}</b></span>
+    <span style="color: #cbd5e1;">Active Unit: <b>{selected_hid}</b> | City: <b>{meta['city']}</b></span>
 </div>
-""".format(selected_hid, meta['city']), unsafe_allow_html=True)
+""")
 
 
 # =========================================================================
@@ -256,19 +257,19 @@ if selected_page == "⚡ Dashboard":
             icon="📈"
         )
 
-    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
     with col_dash_title:
-        st.markdown(f"""
+        render_html(f"""
         <div style="font-size: 1.25rem; font-weight: 700; color: #f8fafc;">
             Electricity Consumption — Last {selected_range}
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
     fig_main = plot_main_consumption_chart(df_slice, range_label=selected_range)
     st.plotly_chart(fig_main, use_container_width=True)
 
-    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
     # Patterns & Summaries
     hourly_metrics, fig_hourly = calculate_daily_hourly_pattern(df_hourly if df_hourly is not None else df_slice)
@@ -302,18 +303,18 @@ if selected_page == "⚡ Dashboard":
     render_insights_cards(insights_list)
 
     # Anomaly alerts
-    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
     df_anom = detect_household_anomalies(df_daily['consumption_kwh'])
     recent_anom = get_recent_anomalies_summary(df_anom, limit=3)
     if recent_anom:
-        st.markdown("""
+        render_html("""
         <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             ⚠️ Unusual Consumption Flags
         </div>
-        """, unsafe_allow_html=True)
+        """)
         for a in recent_anom:
             sev_color = "#ef4444" if a['severity'] == 'High' else "#f59e0b"
-            st.markdown(f"""
+            render_html(f"""
             <div style="background: rgba(30, 41, 59, 0.45); border-left: 4px solid {sev_color}; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-weight: 600; color: #f8fafc;">{a['date']} ({a['day']}) — <span style="color: {sev_color};">{a['type']}</span></span>
@@ -321,7 +322,7 @@ if selected_page == "⚡ Dashboard":
                 </div>
                 <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 4px;">{a['explanation']}</div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
 
 
 # =========================================================================
@@ -445,18 +446,18 @@ elif selected_page == "🔄 Consumption Patterns":
 # 4. PAGE: FORECASTING (REDESIGNED CLEAN CONSUMER UI/UX)
 # =========================================================================
 elif selected_page == "🔮 Forecasting":
-    st.markdown("""
+    render_html(f"""
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
         <div>
             <div style="font-size: 1.6rem; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
                 🔮 Household Electricity Consumption Forecast
             </div>
             <div style="font-size: 0.88rem; color: #94a3b8; margin-top: 2px;">
-                Multi-model machine learning & statistical forecast tailored to Household <b>{}</b>'s historical load habits.
+                Multi-model machine learning & statistical forecast tailored to Household <b>{selected_hid}</b>'s historical load habits.
             </div>
         </div>
     </div>
-    """.format(selected_hid), unsafe_allow_html=True)
+    """)
 
     # Top Control Bar (Pills for horizon + optional retrain button)
     top_c1, top_c2 = st.columns([2.5, 1])
@@ -472,7 +473,6 @@ elif selected_page == "🔮 Forecasting":
     with top_c2:
         recalibrate = st.button("🔄 Retrain / Re-fit Models", help="Re-runs model benchmark and parameter tuning on the latest dataset.")
 
-    # Invalidate cache if user explicitly clicks retrain
     if recalibrate:
         st.cache_data.clear()
 
@@ -489,27 +489,18 @@ elif selected_page == "🔮 Forecasting":
 
     # Model Active Status Bar
     accuracy_pct = max(0.0, min(100.0, 100.0 - test_met['mape']))
-    st.markdown(f"""
-    <div style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
-        border: 1px solid rgba(56, 189, 248, 0.18);
-        padding: 10px 18px;
-        border-radius: 12px;
-        margin: 12px 0 20px 0;
-    ">
+    render_html(f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%); border: 1px solid rgba(56, 189, 248, 0.18); padding: 10px 18px; border-radius: 12px; margin: 10px 0 18px 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="height: 9px; width: 9px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981; display: inline-block;"></span>
-            <span style="font-size: 0.9rem; color: #f8fafc; font-weight: 600;">Optimal Model Active: <span style="color: #38bdf8;">{best_m}</span></span>
-            <span style="font-size: 0.8rem; color: #94a3b8;">• Trained on {fc_res['metadata']['total_observations']} historical days</span>
+            <span style="height: 8px; width: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; display: inline-block;"></span>
+            <span style="font-size: 0.88rem; color: #f8fafc; font-weight: 600;">Optimal Model Active: <span style="color: #38bdf8;">{best_m}</span></span>
+            <span style="font-size: 0.78rem; color: #94a3b8;">• Trained on {fc_res['metadata']['total_observations']} historical days</span>
         </div>
-        <div style="font-size: 0.84rem; color: #94a3b8;">
+        <div style="font-size: 0.82rem; color: #94a3b8;">
             Test Set Accuracy: <span style="color: #10b981; font-weight: 700;">{accuracy_pct:.1f}%</span> (Held-out RMSE: {test_met['rmse']:.2f} kWh)
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     # 4 Clean Consumer KPI Cards
     k1, k2, k3, k4 = st.columns(4)
@@ -517,7 +508,7 @@ elif selected_page == "🔮 Forecasting":
         diff_str = f"{summary['pct_diff']:+0.1f}% vs past {horizon_days}d"
         diff_type = "bad" if summary['pct_diff'] > 5.0 else ("good" if summary['pct_diff'] < -5.0 else "neutral")
         render_forecast_kpi_card(
-            title=f"Total Projected Energy",
+            title="Total Projected Energy",
             value=f"{summary['total_fc_kwh']} kWh",
             subtext=f"Total consumption over next {horizon_days} days",
             delta=diff_str,
@@ -550,18 +541,16 @@ elif selected_page == "🔮 Forecasting":
             icon="📈"
         )
 
-    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
     # Interactive Forecast Line Chart
-    st.markdown(f"""
+    render_html(f"""
     <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
         📈 Household Consumption Trend & Next {horizon_days}-Day Projection
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
-    # Last 45 days of actual history
     recent_hist = df_daily['consumption_kwh'].iloc[-45:].copy()
-    
     fig_fc = go.Figure()
 
     # Historical metered trace
@@ -574,7 +563,7 @@ elif selected_page == "🔮 Forecasting":
         hovertemplate='<b>Date:</b> %{x|%d %b %Y}<br><b>Actual:</b> %{y:.1f} kWh<extra></extra>'
     ))
 
-    # Connector line between last historical point and first forecast point
+    # Connector line
     last_hist_dt = recent_hist.index[-1]
     last_hist_val = recent_hist.values[-1]
     first_fc_dt = df_fut.index[0]
@@ -599,7 +588,7 @@ elif selected_page == "🔮 Forecasting":
         hoverinfo='skip'
     ))
 
-    # 95% Confidence Interval Lower Bound with shaded fill
+    # 95% Confidence Interval Lower Bound
     fig_fc.add_trace(go.Scatter(
         x=df_fut.index,
         y=df_fut['lower_bound_kwh'],
@@ -611,7 +600,7 @@ elif selected_page == "🔮 Forecasting":
         hoverinfo='skip'
     ))
 
-    # Forecast trace with bright markers
+    # Forecast trace
     fig_fc.add_trace(go.Scatter(
         x=df_fut.index,
         y=df_fut['forecast_kwh'],
@@ -623,7 +612,7 @@ elif selected_page == "🔮 Forecasting":
         customdata=np.stack((df_fut['lower_bound_kwh'], df_fut['upper_bound_kwh']), axis=-1)
     ))
 
-    # Vertical line separating historical and future forecast
+    # Vertical separator line
     fig_fc.add_vline(
         x=last_hist_dt,
         line_width=1.5,
@@ -650,15 +639,15 @@ elif selected_page == "🔮 Forecasting":
     render_daily_forecast_timeline(df_fut)
 
     # Actionable Household Insights
-    st.markdown("""
-    <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 24px 0 12px 0; display: flex; align-items: center; gap: 8px;">
+    render_html("""
+    <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 24px 0 12px 0;">
         💡 Forecast Action Insights & Recommendations
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     ins_c1, ins_c2, ins_c3 = st.columns(3)
     with ins_c1:
-        st.markdown(f"""
+        render_html(f"""
         <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
             <div style="display: flex; align-items: center; gap: 8px; color: #38bdf8; font-weight: 700; font-size: 0.92rem;">
                 <span>📅</span> Weekly Pace
@@ -667,9 +656,9 @@ elif selected_page == "🔮 Forecasting":
                 {insights[0]}
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     with ins_c2:
-        st.markdown(f"""
+        render_html(f"""
         <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
             <div style="display: flex; align-items: center; gap: 8px; color: #f59e0b; font-weight: 700; font-size: 0.92rem;">
                 <span>⚡</span> Peak Demand Day
@@ -678,9 +667,9 @@ elif selected_page == "🔮 Forecasting":
                 {insights[1]} Avoid running high-wattage water heaters or washing machines simultaneously during evening peak hours.
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     with ins_c3:
-        st.markdown(f"""
+        render_html(f"""
         <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
             <div style="display: flex; align-items: center; gap: 8px; color: #10b981; font-weight: 700; font-size: 0.92rem;">
                 <span>🌱</span> Energy Saving Tip
@@ -689,9 +678,9 @@ elif selected_page == "🔮 Forecasting":
                 {insights[2]} Keeping air-conditioner set temperatures at 24°C–26°C will help keep this household inside UPPCL Slab 1 or 2.
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
-    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
     # Collapsible Technical Drawer (For Faculty Evaluation)
     with st.expander("🔬 Technical Model Benchmark & Validation Metrics (Faculty Inspection View)", expanded=False):
@@ -758,12 +747,12 @@ elif selected_page == "🛡️ Budget Guardian":
     )
 
     # Alert Banner
-    st.markdown(f"""
-    <div style="background: rgba(30, 41, 59, 0.6); border-left: 5px solid {bg['status_color']}; padding: 16px 20px; border-radius: 10px; margin: 16px 0;">
-        <div style="font-size: 1.15rem; font-weight: 700; color: {bg['status_color']};">{bg['status']}</div>
-        <div style="font-size: 0.92rem; color: #f8fafc; margin-top: 4px;">{bg['alert_msg']}</div>
+    render_html(f"""
+    <div style="background: rgba(30, 41, 59, 0.6); border-left: 5px solid {bg['status_color']}; padding: 14px 18px; border-radius: 10px; margin: 16px 0;">
+        <div style="font-size: 1.1rem; font-weight: 700; color: {bg['status_color']};">{bg['status']}</div>
+        <div style="font-size: 0.9rem; color: #f8fafc; margin-top: 4px;">{bg['alert_msg']}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     # Budget KPI Grid
     k1, k2, k3, k4 = st.columns(4)
@@ -883,13 +872,13 @@ elif selected_page == "💡 What-If Simulator":
         r1.metric("Monthly Energy Saved", f"{sim_result['monthly_kwh_saved']} kWh", f"-{sim_result['pct_kwh_reduction']}%")
         r2.metric("Monthly Bill Savings", f"₹{sim_result['monthly_inr_saved']:,.0f}", "per month")
         
-        st.markdown(f"""
+        render_html(f"""
         <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 10px; padding: 16px; margin-top: 14px;">
             <div style="font-size: 0.85rem; color: #a7f3d0;">Estimated Annual Savings</div>
             <div style="font-size: 2.0rem; font-weight: 800; color: #10b981;">₹{sim_result['annual_inr_saved']:,.0f} / year</div>
             <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">Baseline Bill: ₹{sim_result['baseline_monthly_bill_inr']:,.0f} ➔ Simulated Bill: ₹{sim_result['simulated_monthly_bill_inr']:,.0f}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
     st.markdown("---")
     st.markdown("#### 📊 Savings Contribution by Intervention")
