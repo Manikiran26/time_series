@@ -6,6 +6,7 @@ __pycache__/
 # Large Raw Datasets (>50MB, exceeds GitHub limits)
 individual+household+electric+power+consumption (1)/
 *.txt
+!requirements.txt
 !data/ceew_smart_meter/CEEW_ReadMe.txt
 data/ceew_smart_meter/Mathura_2021.tab
 
