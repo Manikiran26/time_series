@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Raw Datasets (>50MB, exceeds GitHub limits)
+individual+household+electric+power+consumption (1)/
+*.txt
+!data/ceew_smart_meter/CEEW_ReadMe.txt
+data/ceew_smart_meter/Mathura_2021.tab
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Streamlit local state
+.streamlit/
