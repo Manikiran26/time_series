@@ -61,13 +61,15 @@ from analysis.billing_tariffs import (
 from utils.helpers import (
     render_powertrack_header,
     render_summary_card,
+    render_forecast_kpi_card,
+    render_daily_forecast_timeline,
     render_consumption_pattern_box,
     render_insights_cards,
     get_powertrack_css
 )
 from utils.report_generator import generate_household_report
 
-# Apply sleek modern dark CSS
+# Inject modern dark-mode CSS
 st.markdown(get_powertrack_css(), unsafe_allow_html=True)
 
 
@@ -76,20 +78,22 @@ st.markdown(get_powertrack_css(), unsafe_allow_html=True)
 # =========================================================================
 with st.sidebar:
     st.markdown("""
-    <div style="font-size: 1.6rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
-        ⚡ PowerTrack
-    </div>
-    <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">
-        Household Smart-Meter Analytics Platform
+    <div style="padding: 6px 0 16px 0;">
+        <div style="font-size: 1.7rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+            ⚡ PowerTrack
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 500; margin-top: 2px;">
+            Household Smart-Energy Analytics
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
     # City filter
     city_filter = st.selectbox(
-        "📍 District / City",
+        "📍 District / City Filter",
         options=["All Cities", "Mathura", "Bareilly"],
         index=0,
-        help="Filter smart meters by geographic district in Uttar Pradesh, India."
+        help="Filter residential smart meters by district in Uttar Pradesh, India."
     )
 
     # Available households
@@ -106,7 +110,7 @@ with st.sidebar:
         options=household_options,
         index=default_idx,
         format_func=lambda x: household_labels.get(x, x),
-        help="Select a uniquely identified residential smart meter."
+        help="Select an individually monitored residential smart meter."
     )
 
     # Load household meta
@@ -114,22 +118,22 @@ with st.sidebar:
     if sub_meta:
         grade_color = "#10b981" if sub_meta['quality_grade'] == 'A' else ("#f59e0b" if sub_meta['quality_grade'] == 'B' else "#ef4444")
         st.markdown(f"""
-        <div style="background: rgba(30, 41, 59, 0.6); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px;">
+        <div style="background: rgba(30, 41, 59, 0.65); padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 22px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">District:</span>
-                <span style="font-size: 0.85rem; font-weight: 600; color: #f8fafc;">{sub_meta['city']}</span>
+                <span style="font-size: 0.82rem; color: #94a3b8;">Location:</span>
+                <span style="font-size: 0.85rem; font-weight: 600; color: #f8fafc;">{sub_meta['city']}, UP</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">Recorded Days:</span>
-                <span style="font-size: 0.85rem; font-weight: 600; color: #38bdf8;">{sub_meta['recorded_days']} days</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                <span style="font-size: 0.82rem; color: #94a3b8;">Record Span:</span>
+                <span style="font-size: 0.85rem; font-weight: 600; color: #38bdf8;">{sub_meta['recorded_days']} Days</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
                 <span style="font-size: 0.82rem; color: #94a3b8;">Historical Avg:</span>
                 <span style="font-size: 0.85rem; font-weight: 600; color: #f8fafc;">{sub_meta['mean_kwh']:.2f} kWh/day</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 0.82rem; color: #94a3b8;">Data Quality:</span>
-                <span style="font-size: 0.82rem; font-weight: 700; color: {grade_color};">Grade {sub_meta['quality_grade']}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                <span style="font-size: 0.82rem; color: #94a3b8;">Data Integrity:</span>
+                <span style="font-size: 0.8rem; font-weight: 700; color: {grade_color}; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,0.05);">Grade {sub_meta['quality_grade']}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -150,8 +154,8 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("""
-    <div style="font-size: 0.75rem; color: #64748b; line-height: 1.4;">
-        <b>Dataset:</b> CEEW Indian Smart Meter Study (Mathura & Bareilly)<br>
+    <div style="font-size: 0.74rem; color: #64748b; line-height: 1.45;">
+        <b>Dataset:</b> CEEW Smart-Meter Study<br>
         <b>Source:</b> Harvard Dataverse (CC0 1.0)<br>
         <b>Tariff:</b> UPPCL LMV-1 Domestic Slabs
     </div>
@@ -159,13 +163,17 @@ with st.sidebar:
 
 
 # =========================================================================
-# DATA LOADING ENGINE
+# DATA & FORECAST LOADING ENGINE (CACHED PER HOUSEHOLD)
 # =========================================================================
 @st.cache_data(show_spinner=False)
 def load_data_for_household(hid: str):
     df_daily, meta = load_household_daily_series(hid)
     df_hourly = load_household_hourly_series(hid)
     return df_daily, df_hourly, meta
+
+@st.cache_data(show_spinner=False)
+def load_forecast_for_household(hid: str, horizon: int):
+    return get_household_forecast_pipeline(hid, horizon_days=horizon)
 
 try:
     df_daily, df_hourly, meta = load_data_for_household(selected_hid)
@@ -175,13 +183,13 @@ except Exception as e:
 
 
 # Top Application Header
-render_powertrack_header(user_name=f"Household {selected_hid} ({meta['city']})")
+render_powertrack_header(user_name=f"Household {selected_hid} • {meta['city']}")
 
-# Freshness & Dataset Notice
+# Status Bar
 st.markdown("""
-<div style="background: rgba(15, 23, 42, 0.4); border-left: 3px solid #38bdf8; padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; color: #94a3b8; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-    <span>📡 <b>Historical Smart-Meter Analysis:</b> Continuous empirical readings monitored across Uttar Pradesh (CEEW / Harvard Dataverse).</span>
-    <span style="color: #cbd5e1;">Meter ID: <b>{}</b> | City: <b>{}</b></span>
+<div style="background: rgba(15, 23, 42, 0.45); border-left: 3px solid #38bdf8; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; color: #94a3b8; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center;">
+    <span>📡 <b>Empirical Smart-Meter Monitoring:</b> Continuous high-resolution telemetry (CEEW / Harvard Dataverse).</span>
+    <span style="color: #cbd5e1;">Active Unit: <b>{}</b> | City: <b>{}</b></span>
 </div>
 """.format(selected_hid, meta['city']), unsafe_allow_html=True)
 
@@ -190,7 +198,6 @@ st.markdown("""
 # 1. PAGE: DASHBOARD
 # =========================================================================
 if selected_page == "⚡ Dashboard":
-    # Time range selector
     col_dash_title, col_dash_filter = st.columns([1.8, 1.2])
     with col_dash_filter:
         range_options = ["7 Days", "30 Days", "3 Months", "1 Year", "All History"]
@@ -222,7 +229,7 @@ if selected_page == "⚡ Dashboard":
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     with kpi1:
         render_summary_card(
-            title="Latest Day Usage",
+            title="Today's Recorded Usage",
             value=f"{today_usage_kwh:.1f} kWh",
             subtext=f"Recorded on {latest_date.strftime('%d %b %Y')}",
             icon="⚡"
@@ -238,20 +245,19 @@ if selected_page == "⚡ Dashboard":
         render_summary_card(
             title="Average Daily",
             value=f"{avg_daily_kwh:.1f} kWh",
-            subtext=f"Over last {selected_range.lower()}",
+            subtext=f"Across last {selected_range.lower()}",
             icon="📊"
         )
     with kpi4:
         render_summary_card(
             title="Peak Daily Demand",
             value=f"{peak_daily_kwh:.1f} kWh",
-            subtext=f"Highest consumption in period",
+            subtext=f"Highest demand in selected period",
             icon="📈"
         )
 
     st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
 
-    # Main Chart Header
     with col_dash_title:
         st.markdown(f"""
         <div style="font-size: 1.25rem; font-weight: 700; color: #f8fafc;">
@@ -295,14 +301,14 @@ if selected_page == "⚡ Dashboard":
     )
     render_insights_cards(insights_list)
 
-    # Anomaly alerts snippet
+    # Anomaly alerts
     st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
     df_anom = detect_household_anomalies(df_daily['consumption_kwh'])
     recent_anom = get_recent_anomalies_summary(df_anom, limit=3)
     if recent_anom:
         st.markdown("""
         <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-            ⚠️ Recent Unusual Consumption Alerts
+            ⚠️ Unusual Consumption Flags
         </div>
         """, unsafe_allow_html=True)
         for a in recent_anom:
@@ -311,7 +317,7 @@ if selected_page == "⚡ Dashboard":
             <div style="background: rgba(30, 41, 59, 0.45); border-left: 4px solid {sev_color}; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-weight: 600; color: #f8fafc;">{a['date']} ({a['day']}) — <span style="color: {sev_color};">{a['type']}</span></span>
-                    <span style="font-size: 0.85rem; color: #94a3b8;">Recorded: <b>{a['actual_kwh']:.1f} kWh</b> (Expected: {a['expected_kwh']:.1f} kWh)</span>
+                    <span style="font-size: 0.85rem; color: #94a3b8;">Recorded: <b>{a['actual_kwh']:.1f} kWh</b> (Baseline: {a['expected_kwh']:.1f} kWh)</span>
                 </div>
                 <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 4px;">{a['explanation']}</div>
             </div>
@@ -332,7 +338,6 @@ elif selected_page == "📊 Electricity Usage":
     freq_code = 'D' if "Daily" in resample_freq else ('W' if "Weekly" in resample_freq else 'MS')
     df_resampled = df_daily['consumption_kwh'].resample(freq_code).sum().to_frame()
 
-    # Time series plots
     c1, c2 = st.columns(2)
     with c1:
         st.markdown(f"**Aggregated Energy Series ({resample_freq.split()[0]})**")
@@ -369,7 +374,7 @@ elif selected_page == "📊 Electricity Usage":
         )
         st.plotly_chart(fig_cum, use_container_width=True)
 
-    # Statistical Summary Table
+    # Statistical Summary
     stats = get_consumption_summary_stats(df_daily['consumption_kwh'])
     st.markdown("#### 📐 Statistical Distribution Properties")
     s_col1, s_col2, s_col3, s_col4, s_col5 = st.columns(5)
@@ -437,110 +442,285 @@ elif selected_page == "🔄 Consumption Patterns":
 
 
 # =========================================================================
-# 4. PAGE: FORECASTING
+# 4. PAGE: FORECASTING (REDESIGNED CLEAN CONSUMER UI/UX)
 # =========================================================================
 elif selected_page == "🔮 Forecasting":
-    st.markdown("### 🔮 Household Electricity Forecasting Engine")
-    st.caption("Chronologically split benchmark (Naive, Moving Average, Holt-Winters, ARIMA, SARIMA) with held-out test evaluation.")
+    st.markdown("""
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+                🔮 Household Electricity Consumption Forecast
+            </div>
+            <div style="font-size: 0.88rem; color: #94a3b8; margin-top: 2px;">
+                Multi-model machine learning & statistical forecast tailored to Household <b>{}</b>'s historical load habits.
+            </div>
+        </div>
+    </div>
+    """.format(selected_hid), unsafe_allow_html=True)
 
-    f_col1, f_col2 = st.columns([1, 2])
-    with f_col1:
-        horizon_days = st.selectbox("Forecast Horizon", [7, 14, 30], index=0, format_func=lambda x: f"Next {x} Days")
-        run_btn = st.button("🚀 Train & Forecast Models", type="primary")
+    # Top Control Bar (Pills for horizon + optional retrain button)
+    top_c1, top_c2 = st.columns([2.5, 1])
+    with top_c1:
+        horizon_days = st.segmented_control(
+            "Forecast Horizon",
+            options=[7, 14, 30],
+            default=7,
+            format_func=lambda x: f"Next {x} Days",
+            label_visibility="collapsed"
+        ) or 7
 
-    if run_btn or f"forecast_{selected_hid}" in st.session_state:
-        with st.spinner(f"Benchmarking models for Household {selected_hid}..."):
-            if run_btn or f"forecast_{selected_hid}" not in st.session_state:
-                fc_res = get_household_forecast_pipeline(selected_hid, horizon_days=horizon_days)
-                st.session_state[f"forecast_{selected_hid}"] = fc_res
-            else:
-                fc_res = st.session_state[f"forecast_{selected_hid}"]
+    with top_c2:
+        recalibrate = st.button("🔄 Retrain / Re-fit Models", help="Re-runs model benchmark and parameter tuning on the latest dataset.")
 
-        best_m = fc_res['best_model']
-        test_met = fc_res['test_metrics']
-        model_comp = fc_res['model_comparison']
-        df_fut = fc_res['future_forecast']
+    # Invalidate cache if user explicitly clicks retrain
+    if recalibrate:
+        st.cache_data.clear()
 
-        # Metric cards
-        st.markdown("#### 🏆 Model Evaluation & Benchmark Leaderboard")
-        b1, b2, b3, b4 = st.columns(4)
-        b1.metric("Winning Model", best_m)
-        b2.metric("Test MAE", f"{test_met['mae']:.2f} kWh")
-        b3.metric("Test RMSE", f"{test_met['rmse']:.2f} kWh")
-        b4.metric("Test MAPE", f"{test_met['mape']:.1f}%")
+    # Instantaneous forecast retrieval
+    with st.spinner(f"Optimizing time-series forecast for Household {selected_hid}..."):
+        fc_res = load_forecast_for_household(selected_hid, horizon_days)
 
-        # Benchmark comparison table
+    summary = fc_res['summary']
+    df_fut = fc_res['future_forecast']
+    best_m = fc_res['best_model']
+    test_met = fc_res['test_metrics']
+    model_comp = fc_res['model_comparison']
+    insights = fc_res['insights']
+
+    # Model Active Status Bar
+    accuracy_pct = max(0.0, min(100.0, 100.0 - test_met['mape']))
+    st.markdown(f"""
+    <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+        border: 1px solid rgba(56, 189, 248, 0.18);
+        padding: 10px 18px;
+        border-radius: 12px;
+        margin: 12px 0 20px 0;
+    ">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="height: 9px; width: 9px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981; display: inline-block;"></span>
+            <span style="font-size: 0.9rem; color: #f8fafc; font-weight: 600;">Optimal Model Active: <span style="color: #38bdf8;">{best_m}</span></span>
+            <span style="font-size: 0.8rem; color: #94a3b8;">• Trained on {fc_res['metadata']['total_observations']} historical days</span>
+        </div>
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+            Test Set Accuracy: <span style="color: #10b981; font-weight: 700;">{accuracy_pct:.1f}%</span> (Held-out RMSE: {test_met['rmse']:.2f} kWh)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 4 Clean Consumer KPI Cards
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        diff_str = f"{summary['pct_diff']:+0.1f}% vs past {horizon_days}d"
+        diff_type = "bad" if summary['pct_diff'] > 5.0 else ("good" if summary['pct_diff'] < -5.0 else "neutral")
+        render_forecast_kpi_card(
+            title=f"Total Projected Energy",
+            value=f"{summary['total_fc_kwh']} kWh",
+            subtext=f"Total consumption over next {horizon_days} days",
+            delta=diff_str,
+            delta_type=diff_type,
+            icon="⚡"
+        )
+    with k2:
+        render_forecast_kpi_card(
+            title="Estimated Electricity Bill",
+            value=f"₹{summary['estimated_bill_inr']:,.0f}",
+            subtext="Calculated using UPPCL domestic slabs",
+            delta="Tariff LMV-1",
+            delta_type="neutral",
+            icon="💰"
+        )
+    with k3:
+        render_forecast_kpi_card(
+            title="Expected Daily Average",
+            value=f"{summary['avg_daily_kwh']} kWh",
+            subtext="Consistent household baseline pace",
+            icon="📊"
+        )
+    with k4:
+        render_forecast_kpi_card(
+            title="Anticipated Peak Load",
+            value=f"{summary['peak_kwh']} kWh",
+            subtext=f"Projected on {summary['peak_day']}, {summary['peak_date']}",
+            delta="Highest Day",
+            delta_type="bad",
+            icon="📈"
+        )
+
+    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+
+    # Interactive Forecast Line Chart
+    st.markdown(f"""
+    <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+        📈 Household Consumption Trend & Next {horizon_days}-Day Projection
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Last 45 days of actual history
+    recent_hist = df_daily['consumption_kwh'].iloc[-45:].copy()
+    
+    fig_fc = go.Figure()
+
+    # Historical metered trace
+    fig_fc.add_trace(go.Scatter(
+        x=recent_hist.index,
+        y=recent_hist.values,
+        mode='lines',
+        name='Historical Measured',
+        line=dict(color='#38bdf8', width=2.2, shape='spline'),
+        hovertemplate='<b>Date:</b> %{x|%d %b %Y}<br><b>Actual:</b> %{y:.1f} kWh<extra></extra>'
+    ))
+
+    # Connector line between last historical point and first forecast point
+    last_hist_dt = recent_hist.index[-1]
+    last_hist_val = recent_hist.values[-1]
+    first_fc_dt = df_fut.index[0]
+    first_fc_val = df_fut['forecast_kwh'].iloc[0]
+
+    fig_fc.add_trace(go.Scatter(
+        x=[last_hist_dt, first_fc_dt],
+        y=[last_hist_val, first_fc_val],
+        mode='lines',
+        line=dict(color='#f59e0b', width=2, dash='dot'),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+
+    # 95% Confidence Interval Upper Bound
+    fig_fc.add_trace(go.Scatter(
+        x=df_fut.index,
+        y=df_fut['upper_bound_kwh'],
+        mode='lines',
+        line=dict(width=0),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+
+    # 95% Confidence Interval Lower Bound with shaded fill
+    fig_fc.add_trace(go.Scatter(
+        x=df_fut.index,
+        y=df_fut['lower_bound_kwh'],
+        mode='lines',
+        fill='tonexty',
+        fillcolor='rgba(245, 158, 11, 0.12)',
+        line=dict(width=0),
+        name='95% Prediction Confidence Band',
+        hoverinfo='skip'
+    ))
+
+    # Forecast trace with bright markers
+    fig_fc.add_trace(go.Scatter(
+        x=df_fut.index,
+        y=df_fut['forecast_kwh'],
+        mode='lines+markers',
+        name='Projected Consumption',
+        line=dict(color='#f59e0b', width=3, shape='spline'),
+        marker=dict(size=7, color='#f59e0b', symbol='circle'),
+        hovertemplate='<b>Date:</b> %{x|%d %b %Y (%a)}<br><b>Forecast:</b> %{y:.1f} kWh<br><b>95% Range:</b> %{customdata[0]:.1f} - %{customdata[1]:.1f} kWh<extra></extra>',
+        customdata=np.stack((df_fut['lower_bound_kwh'], df_fut['upper_bound_kwh']), axis=-1)
+    ))
+
+    # Vertical line separating historical and future forecast
+    fig_fc.add_vline(
+        x=last_hist_dt,
+        line_width=1.5,
+        line_dash="dash",
+        line_color="rgba(148, 163, 184, 0.6)",
+        annotation_text="Forecast Start",
+        annotation_position="top left",
+        annotation_font_color="#94a3b8"
+    )
+
+    fig_fc.update_layout(
+        paper_bgcolor=CHART_THEME['paper_color'],
+        plot_bgcolor='rgba(15, 23, 42, 0.5)',
+        font=dict(family=CHART_THEME['font_family'], color=CHART_THEME['font_color']),
+        hovermode="x unified",
+        margin=dict(l=35, r=20, t=25, b=35),
+        xaxis=dict(gridcolor=CHART_THEME['grid_color'], showgrid=True),
+        yaxis=dict(title="Daily Consumption (kWh)", gridcolor=CHART_THEME['grid_color'], showgrid=True),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig_fc, use_container_width=True)
+
+    # Day-by-Day Forecast Timeline
+    render_daily_forecast_timeline(df_fut)
+
+    # Actionable Household Insights
+    st.markdown("""
+    <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 24px 0 12px 0; display: flex; align-items: center; gap: 8px;">
+        💡 Forecast Action Insights & Recommendations
+    </div>
+    """, unsafe_allow_html=True)
+
+    ins_c1, ins_c2, ins_c3 = st.columns(3)
+    with ins_c1:
+        st.markdown(f"""
+        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #38bdf8; font-weight: 700; font-size: 0.92rem;">
+                <span>📅</span> Weekly Pace
+            </div>
+            <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 8px; line-height: 1.45;">
+                {insights[0]}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with ins_c2:
+        st.markdown(f"""
+        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #f59e0b; font-weight: 700; font-size: 0.92rem;">
+                <span>⚡</span> Peak Demand Day
+            </div>
+            <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 8px; line-height: 1.45;">
+                {insights[1]} Avoid running high-wattage water heaters or washing machines simultaneously during evening peak hours.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with ins_c3:
+        st.markdown(f"""
+        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #10b981; font-weight: 700; font-size: 0.92rem;">
+                <span>🌱</span> Energy Saving Tip
+            </div>
+            <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 8px; line-height: 1.45;">
+                {insights[2]} Keeping air-conditioner set temperatures at 24°C–26°C will help keep this household inside UPPCL Slab 1 or 2.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+
+    # Collapsible Technical Drawer (For Faculty Evaluation)
+    with st.expander("🔬 Technical Model Benchmark & Validation Metrics (Faculty Inspection View)", expanded=False):
+        st.caption("Internal machine-learning benchmark across candidate time-series models evaluated chronologically on held-out data.")
+        
         comp_rows = []
         for name, m in model_comp.items():
+            is_best = (name == best_m)
             comp_rows.append({
                 'Candidate Model': name,
                 'Validation MAE (kWh)': m['mae'],
                 'Validation RMSE (kWh)': m['rmse'],
                 'Validation MAPE (%)': f"{m['mape']:.1f}%",
-                'Status': '⭐ Selected Winner' if name == best_m else 'Evaluated'
+                'Evaluation Status': '⭐ Selected Winner' if is_best else 'Evaluated'
             })
+        
         st.dataframe(pd.DataFrame(comp_rows), use_container_width=True)
 
-        st.markdown("---")
-        st.markdown(f"#### 📈 Next {horizon_days}-Day Out-of-Sample Forecast")
+        t_c1, t_c2, t_c3 = st.columns(3)
+        t_c1.metric("Selected Model", best_m)
+        t_c2.metric("Held-Out Test Set MAE", f"{test_met['mae']:.2f} kWh")
+        t_c3.metric("Held-Out Test Set RMSE", f"{test_met['rmse']:.2f} kWh")
 
-        # Combine recent history + forecast for chart
-        recent_hist = df_daily['consumption_kwh'].iloc[-60:].copy()
-        
-        fig_fc = go.Figure()
-        # Historical trace
-        fig_fc.add_trace(go.Scatter(
-            x=recent_hist.index,
-            y=recent_hist.values,
-            mode='lines',
-            name='Historical Metered',
-            line=dict(color='#38bdf8', width=2)
-        ))
-        # Forecast trace
-        fig_fc.add_trace(go.Scatter(
-            x=df_fut.index,
-            y=df_fut['forecast_kwh'],
-            mode='lines+markers',
-            name=f'Forecast ({best_m})',
-            line=dict(color='#f59e0b', width=2.5, dash='dash')
-        ))
-        # Prediction interval (upper)
-        fig_fc.add_trace(go.Scatter(
-            x=df_fut.index,
-            y=df_fut['upper_bound_kwh'],
-            mode='lines',
-            line=dict(width=0),
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        # Prediction interval (lower)
-        fig_fc.add_trace(go.Scatter(
-            x=df_fut.index,
-            y=df_fut['lower_bound_kwh'],
-            mode='lines',
-            fill='tonexty',
-            fillcolor='rgba(245, 158, 11, 0.15)',
-            line=dict(width=0),
-            name='95% Prediction Interval'
-        ))
-
-        fig_fc.update_layout(
-            paper_bgcolor=CHART_THEME['paper_color'],
-            plot_bgcolor='rgba(15, 23, 42, 0.5)',
-            font=dict(family=CHART_THEME['font_family'], color=CHART_THEME['font_color']),
-            margin=dict(l=35, r=20, t=25, b=35),
-            xaxis=dict(gridcolor=CHART_THEME['grid_color']),
-            yaxis=dict(title="Daily Consumption (kWh)", gridcolor=CHART_THEME['grid_color'])
-        )
-        st.plotly_chart(fig_fc, use_container_width=True)
-
-        # Forecast values table
-        tot_fc_kwh = float(df_fut['forecast_kwh'].sum())
-        fc_cost_est = calculate_electricity_bill(tot_fc_kwh)['total_bill']
-        st.markdown(f"**Projected Energy over Next {horizon_days} Days:** `{tot_fc_kwh:.1f} kWh` (~₹{fc_cost_est:,.0f} UPPCL Energy Charges)")
-        st.dataframe(df_fut.reset_index()[['date', 'forecast_kwh', 'lower_bound_kwh', 'upper_bound_kwh', 'model_name']], use_container_width=True)
-
-        st.caption("⚠️ **Note:** Predictions are statistical estimates generated from historical smart meter readings, not guaranteed billing invoices.")
+        st.markdown(r"""
+        **Methodology Note for Faculty:**
+        * Candidate models are trained on chronological **Training (75%)** and validated on chronological **Validation (15%)** to completely eliminate lookahead data leakage.
+        * The optimal model is selected strictly on minimum validation RMSE, then evaluated independently on the strictly held-out **Test Set (10%)**.
+        * Out-of-sample prediction intervals widen with horizon step $\sqrt{h}$ to reflect stochastic uncertainty.
+        """)
 
 
 # =========================================================================
@@ -561,7 +741,6 @@ elif selected_page == "🛡️ Budget Guardian":
         )
         sanctioned_kw = st.selectbox("Sanctioned Load (kW)", [1.0, 2.0, 3.0, 5.0], index=1)
 
-    # Compute budget metrics based on latest month of data
     latest_date = df_daily.index.max()
     latest_month = latest_date.to_period('M')
     month_data = df_daily[df_daily.index.to_period('M') == latest_month]
@@ -593,11 +772,9 @@ elif selected_page == "🛡️ Budget Guardian":
     k3.metric("Remaining Budget", f"₹{bg['remaining_budget_inr']:,.0f}", f"{bg['days_remaining']} days left")
     k4.metric("Target Daily Limit", f"{bg['target_daily_kwh']:.1f} kWh/day", f"₹{bg['target_daily_spend_inr']:.0f}/day")
 
-    # Progress bar
     spend_pct = min(1.0, max(0.0, bg['spent_to_date_inr'] / budget_input))
     st.progress(spend_pct, text=f"Budget Consumption: {spend_pct*100:.1f}% used")
 
-    # Cumulative burn rate chart
     st.markdown("#### 📉 Cumulative Month Spend Trajectory")
     month_days = list(range(1, 31))
     linear_budget_line = [budget_input * (d / 30.0) for d in month_days]
@@ -636,7 +813,6 @@ elif selected_page == "🧾 Bill Analysis":
     st.markdown("### 🧾 Bill Discrepancy Checker")
     st.caption("Audit paper utility bills against smart-meter recorded energy and UPPCL tariff slabs.")
 
-    # Calculate actual meter consumption in last 30 days
     last_30_kwh = float(df_daily['consumption_kwh'].iloc[-30:].sum())
     expected_default_bill = calculate_electricity_bill(last_30_kwh)['total_bill']
 
@@ -715,7 +891,6 @@ elif selected_page == "💡 What-If Simulator":
         </div>
         """, unsafe_allow_html=True)
 
-    # Savings breakdown
     st.markdown("---")
     st.markdown("#### 📊 Savings Contribution by Intervention")
     breakdown_df = pd.DataFrame([
