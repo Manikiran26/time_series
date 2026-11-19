@@ -8,6 +8,180 @@ import re
 import streamlit as st
 import pandas as pd
 from typing import Dict, Any, Optional, List
+from contextlib import contextmanager
+
+
+# Responsive column helper
+def responsive_columns(ratios_or_count, mobile_stack=True, tablet_2col=True):
+    """
+    Create responsive columns that adapt to screen size.
+    On mobile: stacks vertically
+    On tablet (768-1024px): 2-column grid for 3+ columns
+    On desktop: uses specified ratios
+    """
+    if isinstance(ratios_or_count, int):
+        count = ratios_or_count
+        ratios = [1] * count
+    else:
+        ratios = list(ratios_or_count)
+        count = len(ratios)
+
+    cols = st.columns(ratios)
+    return cols
+
+
+@contextmanager
+def toast_container():
+    """Context manager for toast notifications."""
+    container = st.empty()
+    yield container
+
+
+def render_skeleton(height: int = 100, width: str = "100%", border_radius: int = 8) -> None:
+    """Render a loading skeleton placeholder."""
+    html = f"""
+    <div class="powertrack-skeleton" style="height: {height}px; width: {width}; border-radius: {border_radius}px;"></div>
+    """
+    render_html(html)
+
+
+def render_skeleton_card() -> None:
+    """Render a skeleton card matching KPI card dimensions."""
+    html = """
+    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 16px 18px; min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div class="powertrack-skeleton" style="height: 16px; width: 60%; border-radius: 4px; margin-bottom: 12px;"></div>
+        <div class="powertrack-skeleton" style="height: 32px; width: 40%; border-radius: 4px; margin-bottom: 12px;"></div>
+        <div class="powertrack-skeleton" style="height: 14px; width: 80%; border-radius: 4px;"></div>
+    </div>
+    """
+    render_html(html)
+
+
+def render_skeleton_chart(height: int = 380) -> None:
+    """Render a skeleton for chart placeholders."""
+    html = f"""
+    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 12px; height: {height}px; border: 1px solid rgba(255, 255, 255, 0.06);">
+        <div class="powertrack-skeleton" style="height: 20px; width: 30%; border-radius: 4px; margin: 16px auto 0 auto;"></div>
+    </div>
+    """
+    render_html(html)
+
+
+def render_skeleton_table(rows: int = 5) -> None:
+    """Render a skeleton for table placeholders."""
+    skeleton_rows = ""
+    for _ in range(rows):
+        skeleton_rows += '<div class="powertrack-skeleton" style="height: 12px; width: 100%; border-radius: 4px; margin: 8px 0;"></div>'
+
+    html = f"""
+    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.06);">
+        <div class="powertrack-skeleton" style="height: 16px; width: 40%; border-radius: 4px; margin-bottom: 16px;"></div>
+        {skeleton_rows}
+    </div>
+    """
+    render_html(html)
+
+
+def show_toast(message: str, type: str = "info", duration: int = 4000) -> None:
+    """Show a toast notification. Types: success, warning, error, info"""
+    icons = {
+        "success": "✅",
+        "warning": "⚠️",
+        "error": "❌",
+        "info": "ℹ️"
+    }
+    icon = icons.get(type, "ℹ️")
+
+    html = f"""
+    <div class="powertrack-toast-container" id="toast-container">
+        <div class="powertrack-toast {type}" role="alert" aria-live="polite">
+            <span style="font-size: 1.2rem;">{icon}</span>
+            <span style="flex: 1; color: var(--text-primary);">{message}</span>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 0; line-height: 1;">×</button>
+        </div>
+    </div>
+    <script>
+        setTimeout(() => {{
+            const toast = document.querySelector('.powertrack-toast');
+            if (toast) {{
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }}
+        }}, {duration});
+    </script>
+    """
+    render_html(html)
+
+
+def show_progress(label: str, progress: float, key: str = None) -> None:
+    """Show a progress indicator with label."""
+    html = f"""
+    <div style="margin: 8px 0;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">{label}</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">{int(progress * 100)}%</span>
+        </div>
+        <div style="height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden;">
+            <div style="height: 100%; width: {progress * 100}%; background: var(--accent-primary); border-radius: 3px; transition: width 0.3s ease;"></div>
+        </div>
+    </div>
+    """
+    render_html(html)
+
+
+def render_tooltip(text: str, icon: str = "ⓘ") -> None:
+    """Render a tooltip with hover text."""
+    html = f'<span class="powertrack-tooltip" data-tooltip="{text}" tabindex="0" aria-label="{text}">{icon}</span>'
+    render_html(html)
+
+
+def render_help_text(text: str) -> None:
+    """Render help text with consistent styling."""
+    html = f'<div class="powertrack-help-text">{text}</div>'
+    render_html(html)
+
+
+def render_info_banner(message: str, icon: str = "ℹ️", type: str = "info") -> None:
+    """Render an informational banner. Types: info, warning, success, error"""
+    colors = {
+        "info": "var(--accent-primary)",
+        "warning": "var(--accent-warning)",
+        "success": "var(--accent-success)",
+        "error": "var(--accent-danger)"
+    }
+    border_color = colors.get(type, colors["info"])
+
+    html = f"""
+    <div class="powertrack-info-banner" style="border-left-color: {border_color};">
+        <span class="icon">{icon}</span>
+        <div class="content">{message}</div>
+    </div>
+    """
+    render_html(html)
+
+
+def render_kbd(keys: list) -> str:
+    """Render keyboard shortcut keys. Returns HTML string."""
+    kbd_html = ''.join(f'<kbd class="powertrack-kbd">{k}</kbd>' for k in keys)
+    return f'<span class="powertrack-kbd-sequence">{kbd_html}</span>'
+
+
+def render_shortcut_help(shortcuts: list) -> None:
+    """Render a list of keyboard shortcuts. shortcuts = [('Keys', 'Description'), ...]"""
+    rows = ""
+    for keys, desc in shortcuts:
+        if isinstance(keys, str):
+            keys = [keys]
+        kbd = render_kbd(keys)
+        rows += f'<div style="display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);"><div style="min-width: 120px;">{kbd}</div><div style="font-size: 0.8rem; color: var(--text-secondary);">{desc}</div></div>'
+
+    html = f"""
+    <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px; font-size: 0.85rem;">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Keyboard Shortcuts</div>
+        {rows}
+    </div>
+    """
+    render_html(html)
 
 
 def render_html(html_str: str):
@@ -197,77 +371,734 @@ def render_insights_cards(insights: list):
             render_html(html)
 
 
-def get_powertrack_css() -> str:
-    """Return polished, modern dark-mode CSS."""
-    return """
+def get_powertrack_css(theme: str = 'dark') -> str:
+    """Return polished, modern CSS with theme support (dark/light)."""
+
+    if theme == 'dark':
+        # Dark theme colors
+        colors = {
+            'bg_primary': '#090d16',
+            'bg_secondary': '#0f172a',
+            'bg_tertiary': '#1e293b',
+            'bg_card': 'rgba(30, 41, 59, 0.75)',
+            'bg_card_hover': 'rgba(30, 41, 59, 0.85)',
+            'bg_sidebar': '#0b0f19',
+            'border_subtle': 'rgba(255, 255, 255, 0.08)',
+            'border_accent': 'rgba(56, 189, 248, 0.2)',
+            'text_primary': '#f8fafc',
+            'text_secondary': '#cbd5e1',
+            'text_muted': '#94a3b8',
+            'text_disabled': '#64748b',
+            'accent_primary': '#38bdf8',
+            'accent_secondary': '#818cf8',
+            'accent_warning': '#f59e0b',
+            'accent_danger': '#ef4444',
+            'accent_success': '#10b981',
+            'btn_bg': 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            'btn_hover': 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            'btn_border': 'rgba(56, 189, 248, 0.25)',
+            'input_bg': 'rgba(15, 23, 42, 0.6)',
+            'input_border': 'rgba(56, 189, 248, 0.15)',
+            'segmented_bg': '#111827',
+            'segmented_selected': '#0284c7',
+            'expander_bg': '#0f172a',
+            'chart_bg': 'rgba(15, 23, 42, 0.5)',
+            'chart_paper': 'rgba(0,0,0,0)',
+            'grid_color': 'rgba(148, 163, 184, 0.15)',
+            'scrollbar_track': '#0f172a',
+            'scrollbar_thumb': '#334155',
+            'shadow': 'rgba(0, 0, 0, 0.4)',
+            'shadow_card': 'rgba(0, 0, 0, 0.3)',
+        }
+    else:
+        # Light theme colors
+        colors = {
+            'bg_primary': '#f8fafc',
+            'bg_secondary': '#ffffff',
+            'bg_tertiary': '#f1f5f9',
+            'bg_card': 'rgba(255, 255, 255, 0.9)',
+            'bg_card_hover': 'rgba(248, 250, 252, 0.95)',
+            'bg_sidebar': '#ffffff',
+            'border_subtle': 'rgba(15, 23, 42, 0.08)',
+            'border_accent': 'rgba(2, 132, 199, 0.2)',
+            'text_primary': '#0f172a',
+            'text_secondary': '#334155',
+            'text_muted': '#64748b',
+            'text_disabled': '#94a3b8',
+            'accent_primary': '#0284c7',
+            'accent_secondary': '#6366f1',
+            'accent_warning': '#d97706',
+            'accent_danger': '#dc2626',
+            'accent_success': '#059669',
+            'btn_bg': 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+            'btn_hover': 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            'btn_border': 'rgba(2, 132, 199, 0.25)',
+            'input_bg': 'rgba(255, 255, 255, 0.9)',
+            'input_border': 'rgba(2, 132, 199, 0.15)',
+            'segmented_bg': '#e2e8f0',
+            'segmented_selected': '#0284c7',
+            'expander_bg': '#f1f5f9',
+            'chart_bg': 'rgba(248, 250, 252, 0.5)',
+            'chart_paper': 'rgba(255,255,255,1)',
+            'grid_color': 'rgba(15, 23, 42, 0.1)',
+            'scrollbar_track': '#f1f5f9',
+            'scrollbar_thumb': '#cbd5e1',
+            'shadow': 'rgba(0, 0, 0, 0.1)',
+            'shadow_card': 'rgba(0, 0, 0, 0.08)',
+        }
+
+    return f"""
     <style>
-    /* Dark Obsidian Base */
-    .stApp {
-        background-color: #090d16;
-        color: #f1f5f9;
+    /* Theme: {theme} */
+    :root {{
+        --bg-primary: {colors['bg_primary']};
+        --bg-secondary: {colors['bg_secondary']};
+        --bg-tertiary: {colors['bg_tertiary']};
+        --bg-card: {colors['bg_card']};
+        --bg-card-hover: {colors['bg_card_hover']};
+        --bg-sidebar: {colors['bg_sidebar']};
+        --border-subtle: {colors['border_subtle']};
+        --border-accent: {colors['border_accent']};
+        --text-primary: {colors['text_primary']};
+        --text-secondary: {colors['text_secondary']};
+        --text-muted: {colors['text_muted']};
+        --text-disabled: {colors['text_disabled']};
+        --accent-primary: {colors['accent_primary']};
+        --accent-secondary: {colors['accent_secondary']};
+        --accent-warning: {colors['accent_warning']};
+        --accent-danger: {colors['accent_danger']};
+        --accent-success: {colors['accent_success']};
+        --btn-bg: {colors['btn_bg']};
+        --btn-hover: {colors['btn_hover']};
+        --btn-border: {colors['btn_border']};
+        --input-bg: {colors['input_bg']};
+        --input-border: {colors['input_border']};
+        --segmented-bg: {colors['segmented_bg']};
+        --segmented-selected: {colors['segmented_selected']};
+        --expander-bg: {colors['expander_bg']};
+        --chart-bg: {colors['chart_bg']};
+        --chart-paper: {colors['chart_paper']};
+        --grid-color: {colors['grid_color']};
+        --scrollbar-track: {colors['scrollbar_track']};
+        --scrollbar-thumb: {colors['scrollbar_thumb']};
+        --shadow: {colors['shadow']};
+        --shadow-card: {colors['shadow_card']};
+    }}
+
+    /* Base App Styling */
+    .stApp {{
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }}
 
     /* Hide standard header */
-    header {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    header {{visibility: hidden;}}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
 
     /* Modern button styling */
-    .stButton button {
+    .stButton button {{
         border-radius: 10px;
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: #f8fafc;
-        border: 1px solid rgba(56, 189, 248, 0.25);
+        background: var(--btn-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--btn-border);
         font-weight: 600;
         padding: 6px 18px;
         transition: all 0.2s ease;
-    }
+    }}
 
-    .stButton button:hover {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    .stButton button:hover {{
+        background: var(--btn-hover);
         color: #ffffff;
-        border-color: #38bdf8;
-    }
+        border-color: var(--accent-primary);
+    }}
+
+    .stButton button:focus {{
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }}
 
     /* Segmented controls / pill selectors */
-    div[data-baseweb="segmented-control"] {
-        background-color: #111827 !important;
+    div[data-baseweb="segmented-control"] {{
+        background-color: var(--segmented-bg) !important;
         border-radius: 10px !important;
         padding: 3px !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
+        border: 1px solid var(--border-subtle) !important;
+    }}
 
-    div[data-baseweb="segmented-control"] button {
+    div[data-baseweb="segmented-control"] button {{
         border-radius: 7px !important;
         font-weight: 600 !important;
-        color: #94a3b8 !important;
-    }
+        color: var(--text-muted) !important;
+    }}
 
-    div[data-baseweb="segmented-control"] button[aria-selected="true"] {
-        background-color: #0284c7 !important;
+    div[data-baseweb="segmented-control"] button[aria-selected="true"] {{
+        background-color: var(--segmented-selected) !important;
         color: #ffffff !important;
-    }
+    }}
+
+    div[data-baseweb="segmented-control"] button:focus {{
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }}
+
+    /* Selectbox styling */
+    div[data-baseweb="select"] > div {{
+        background-color: var(--input-bg) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 8px !important;
+        color: var(--text-primary) !important;
+    }}
+
+    div[data-baseweb="select"] > div:focus-within {{
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--border-accent) !important;
+    }}
+
+    /* Number input styling */
+    .stNumberInput input {{
+        background-color: var(--input-bg) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 8px !important;
+        color: var(--text-primary) !important;
+    }}
+
+    .stNumberInput input:focus {{
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--border-accent) !important;
+    }}
+
+    /* Slider styling */
+    .stSlider > div > div > div > div {{
+        background-color: var(--accent-primary) !important;
+    }}
+
+    .stSlider > div > div > div {{
+        background-color: var(--border-subtle) !important;
+    }}
 
     /* Plotly chart container */
-    .js-plotly-plot {
+    .js-plotly-plot {{
         border-radius: 12px;
         overflow: hidden;
-    }
+        background-color: var(--chart-bg) !important;
+    }}
 
     /* Expander styling for internal diagnostics */
-    .streamlit-expanderHeader {
-        background-color: #0f172a !important;
+    .streamlit-expanderHeader {{
+        background-color: var(--expander-bg) !important;
         border-radius: 10px !important;
-        color: #94a3b8 !important;
+        color: var(--text-muted) !important;
         font-size: 0.9rem !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
+        border: 1px solid var(--border-subtle) !important;
+    }}
+
+    .streamlit-expanderHeader:focus {{
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }}
 
     /* Sidebar polish */
-    section[data-testid="stSidebar"] {
-        background-color: #0b0f19;
-        border-right: 1px solid rgba(255, 255, 255, 0.06);
-    }
+    section[data-testid="stSidebar"] {{
+        background-color: var(--bg-sidebar);
+        border-right: 1px solid var(--border-subtle);
+    }}
+
+    /* Dataframe styling */
+    .stDataFrame {{
+        background-color: var(--bg-card) !important;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+    }}
+
+    /* Progress bar */
+    .stProgress > div > div > div {{
+        background-color: var(--accent-primary) !important;
+    }}
+
+    /* Radio buttons */
+    div[role="radiogroup"] label {{
+        color: var(--text-primary) !important;
+    }}
+
+    /* Metrics */
+    [data-testid="stMetric"] {{
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 12px !important;
+        padding: 16px !important;
+    }}
+
+    [data-testid="stMetricLabel"] {{
+        color: var(--text-muted) !important;
+    }}
+
+    [data-testid="stMetricValue"] {{
+        color: var(--text-primary) !important;
+    }}
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {{
+        background-color: var(--bg-tertiary);
+        border-radius: 10px;
+        padding: 4px;
+        border: 1px solid var(--border-subtle);
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        color: var(--text-muted) !important;
+        border-radius: 7px !important;
+    }}
+
+    .stTabs [aria-selected="true"] {{
+        background-color: var(--accent-primary) !important;
+        color: #ffffff !important;
+    }}
+
+    /* Alert/Info boxes */
+    .stAlert {{
+        border-radius: 10px !important;
+        border: none !important;
+    }}
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {{
+        width: 8px;
+        height: 8px;
+    }}
+
+    ::-webkit-scrollbar-track {{
+        background: var(--scrollbar-track);
+    }}
+
+    ::-webkit-scrollbar-thumb {{
+        background: var(--scrollbar-thumb);
+        border-radius: 4px;
+    }}
+
+    ::-webkit-scrollbar-thumb:hover {{
+        background: var(--text-muted);
+    }}
+
+    /* Selection styling */
+    ::selection {{
+        background-color: var(--accent-primary);
+        color: #ffffff;
+    }}
+
+    /* Focus visible for accessibility */
+    *:focus-visible {{
+        outline: 2px solid var(--accent-primary) !important;
+        outline-offset: 2px !important;
+    }}
+
+    /* Toast notification container */
+    .powertrack-toast-container {{
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+    }}
+
+    .powertrack-toast {{
+        pointer-events: auto;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: 0 10px 30px -5px var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 280px;
+        max-width: 420px;
+        animation: slideIn 0.3s ease-out;
+    }}
+
+    @keyframes slideIn {{
+        from {{
+            opacity: 0;
+            transform: translateX(100%);
+        }}
+        to {{
+            opacity: 1;
+            transform: translateX(0);
+        }}
+    }}
+
+    .powertrack-toast.success {{ border-left: 4px solid var(--accent-success); }}
+    .powertrack-toast.warning {{ border-left: 4px solid var(--accent-warning); }}
+    .powertrack-toast.error {{ border-left: 4px solid var(--accent-danger); }}
+    .powertrack-toast.info {{ border-left: 4px solid var(--accent-primary); }}
+
+    /* Loading skeleton */
+    .powertrack-skeleton {{
+        background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 8px;
+    }}
+
+    @keyframes shimmer {{
+        0% {{ background-position: 200% 0; }}
+        100% {{ background-position: -200% 0; }}
+    }}
+
+    /* Page transition */
+    .stApp > div:first-child {{
+        animation: fadeIn 0.3s ease-out;
+    }}
+
+    @keyframes fadeIn {{
+        from {{ opacity: 0; transform: translateY(10px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {{
+        .stApp {{
+            padding: 0 !important;
+        }}
+
+        section[data-testid="stSidebar"] {{
+            width: 100% !important;
+            max-width: 100% !important;
+        }}
+
+        .block-container {{
+            padding: 1rem !important;
+            max-width: 100% !important;
+        }}
+
+        /* Stack columns on mobile */
+        div[data-testid="column"] {{
+            width: 100% !important;
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }}
+
+        /* Make 4-column grids stack as 2x2 on tablet, 1x4 on mobile */
+        @media (max-width: 1024px) and (min-width: 769px) {{
+            div[data-testid="column"] {{
+                width: 50% !important;
+                flex: 1 1 50% !important;
+                min-width: 50% !important;
+            }}
+        }}
+
+        /* Reduce font sizes on mobile */
+        html {{
+            font-size: 14px;
+        }}
+
+        /* Compact KPI cards */
+        [data-testid="stMetric"] {{
+            padding: 12px !important;
+        }}
+
+        /* Stack sidebar elements */
+        section[data-testid="stSidebar"] .stSelectbox,
+        section[data-testid="stSidebar"] .stRadio {{
+            width: 100% !important;
+        }}
+    }}
+
+    /* Tablet adjustments */
+    @media (max-width: 1024px) and (min-width: 769px) {{
+        .block-container {{
+            padding: 1.5rem !important;
+        }}
+    }}
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {{
+        :root {{
+            --border-subtle: var(--text-primary);
+            --border-accent: var(--accent-primary);
+        }}
+    }}
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {{
+        *, *::before, *::after {{
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }}
+    }}
+
+    /* Data density: compact mode */
+    .powertrack-compact [data-testid="stMetric"] {{
+        padding: 8px 12px !important;
+    }}
+
+    .powertrack-compact .stButton button {{
+        padding: 4px 12px !important;
+        font-size: 0.85rem !important;
+    }}
+
+    .powertrack-compact .streamlit-expanderHeader {{
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+    }}
+
+    /* Data density: comfortable mode (default) */
+    .powertrack-comfortable [data-testid="stMetric"] {{
+        padding: 20px 24px !important;
+    }}
+
+    .powertrack-comfortable .stButton button {{
+        padding: 8px 24px !important;
+        font-size: 0.95rem !important;
+    }}
+
+    /* Tooltip styling */
+    .powertrack-tooltip {{
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        cursor: help;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+    }}
+
+    .powertrack-tooltip:hover {{
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: #ffffff;
+    }}
+
+    .powertrack-tooltip::after {{
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        max-width: 280px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+        z-index: 100;
+        box-shadow: 0 4px 12px var(--shadow);
+        pointer-events: none;
+    }}
+
+    .powertrack-tooltip::before {{
+        content: '';
+        position: absolute;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: var(--bg-card);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+        z-index: 100;
+    }}
+
+    .powertrack-tooltip:hover::after,
+    .powertrack-tooltip:hover::before {{
+        opacity: 1;
+        visibility: visible;
+    }}
+
+    .powertrack-tooltip:focus-visible {{
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }}
+
+    /* Help text styling */
+    .powertrack-help-text {{
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        line-height: 1.5;
+    }}
+
+    .powertrack-help-text strong {{
+        color: var(--text-secondary);
+    }}
+
+    /* Info banner */
+    .powertrack-info-banner {{
+        background: var(--bg-card);
+        border: 1px solid var(--border-accent);
+        border-left: 4px solid var(--accent-primary);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 16px 0;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }}
+
+    .powertrack-info-banner .icon {{
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }}
+
+    .powertrack-info-banner .content {{
+        flex: 1;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }}
+
+    /* Keyboard shortcut hint */
+    .powertrack-kbd {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 22px;
+        padding: 0 6px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        color: var(--text-muted);
+        box-shadow: 0 1px 2px var(--shadow);
+    }}
+
+    .powertrack-kbd-sequence {{
+        display: inline-flex;
+        gap: 4px;
+    }}
+
+    /* Keyboard shortcut overlay */
+    .powertrack-shortcuts-overlay {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+    }}
+
+    .powertrack-shortcuts-overlay.visible {{
+        opacity: 1;
+        visibility: visible;
+    }}
+
+    .powertrack-shortcuts-modal {{
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 50px var(--shadow);
+        transform: scale(0.95);
+        transition: transform 0.2s ease;
+    }}
+
+    .powertrack-shortcuts-overlay.visible .powertrack-shortcuts-modal {{
+        transform: scale(1);
+    }}
+
+    .powertrack-shortcuts-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+    }}
+
+    .powertrack-shortcuts-header h3 {{
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+    }}
+
+    .powertrack-shortcuts-close {{
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }}
+
+    .powertrack-shortcuts-close:hover {{
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }}
+
+    .powertrack-shortcuts-list {{
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }}
+
+    .powertrack-shortcut-item {{
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 12px;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }}
+
+    .powertrack-shortcut-item:hover {{
+        background: var(--bg-secondary);
+    }}
+
+    .powertrack-shortcut-keys {{
+        display: flex;
+        gap: 4px;
+        min-width: 100px;
+    }}
+
+    .powertrack-shortcut-desc {{
+        flex: 1;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }}
+
+    .powertrack-shortcut-category {{
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 16px 0 8px 0;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }}
     </style>
     """

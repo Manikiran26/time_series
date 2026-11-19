@@ -27,6 +27,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Initialize theme in session state
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'  # default
+
 # Core Module Imports
 from analysis.household_preprocessing import (
     load_all_households_meta,
@@ -66,28 +70,44 @@ from utils.helpers import (
     render_daily_forecast_timeline,
     render_consumption_pattern_box,
     render_insights_cards,
-    get_powertrack_css
+    get_powertrack_css,
+    render_skeleton,
+    render_skeleton_card,
+    render_skeleton_chart,
+    render_skeleton_table,
+    show_toast,
+    show_progress
 )
 from utils.report_generator import generate_household_report
 
-# Inject modern dark-mode CSS
-st.markdown(get_powertrack_css(), unsafe_allow_html=True)
+# Inject modern theme-aware CSS
+st.markdown(get_powertrack_css(st.session_state.theme), unsafe_allow_html=True)
 
 
 # =========================================================================
 # SIDEBAR: HOUSEHOLD SELECTION & NAVIGATION
 # =========================================================================
 with st.sidebar:
-    render_html("""
-    <div style="padding: 4px 0 14px 0;">
-        <div style="font-size: 1.65rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
-            ⚡ PowerTrack
+    # Theme toggle at the top
+    theme_col1, theme_col2 = st.columns([3, 1])
+    with theme_col1:
+        render_html("""
+        <div style="padding: 4px 0 14px 0;">
+            <div style="font-size: 1.65rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+                ⚡ PowerTrack
+            </div>
+            <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 500; margin-top: 2px;">
+                Household Smart-Energy Analytics
+            </div>
         </div>
-        <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 500; margin-top: 2px;">
-            Household Smart-Energy Analytics
-        </div>
-    </div>
-    """)
+        """)
+    with theme_col2:
+        theme_label = "☀️ Light" if st.session_state.theme == 'dark' else "🌙 Dark"
+        if st.button(theme_label, key="theme_toggle", help="Toggle dark/light mode", use_container_width=True):
+            st.session_state.theme = 'light' if st.session_state.theme == 'dark' else 'dark'
+            st.rerun()
+
+    st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
     # City filter
     city_filter = st.selectbox(
@@ -162,6 +182,18 @@ with st.sidebar:
     </div>
     """)
 
+    # Keyboard shortcuts help
+    with st.expander("⌨️ Keyboard Shortcuts", expanded=False):
+        render_shortcut_help([
+            (["D"], "Toggle Dashboard"),
+            (["F"], "Open Forecasting"),
+            (["B"], "Open Budget Guardian"),
+            (["W"], "Open What-If Simulator"),
+            (["R"], "Open Reports"),
+            (["T"], "Toggle Theme (Dark/Light)"),
+            (["?"], "Show this help"),
+        ])
+
 
 # =========================================================================
 # DATA & FORECAST LOADING ENGINE (CACHED PER HOUSEHOLD)
@@ -177,7 +209,9 @@ def load_forecast_for_household(hid: str, horizon: int):
     return get_household_forecast_pipeline(hid, horizon_days=horizon)
 
 try:
-    df_daily, df_hourly, meta = load_data_for_household(selected_hid)
+    # Show loading skeletons while data loads
+    with st.spinner("Loading smart-meter data..."):
+        df_daily, df_hourly, meta = load_data_for_household(selected_hid)
 except Exception as e:
     st.error(f"Error loading smart-meter data for household {selected_hid}: {e}")
     st.stop()
@@ -206,8 +240,10 @@ if selected_page == "⚡ Dashboard":
             "Select Time Window",
             options=range_options,
             default="30 Days",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            help="Choose the time window for consumption analysis. 'All History' uses the full available dataset."
         ) or "30 Days"
+        render_help_text("💡 Shorter windows highlight recent patterns; longer windows reveal seasonal trends.")
 
     range_map = {"7 Days": 7, "30 Days": 30, "3 Months": 90, "1 Year": 365, "All History": len(df_daily)}
     n_days = range_map.get(selected_range, 30)
@@ -334,7 +370,9 @@ elif selected_page == "📊 Electricity Usage":
 
     col_freq, col_date_range = st.columns([1, 2])
     with col_freq:
-        resample_freq = st.selectbox("Resampling Granularity", ["Daily (D)", "Weekly (W)", "Monthly (MS)"], index=0)
+        resample_freq = st.selectbox("Resampling Granularity", ["Daily (D)", "Weekly (W)", "Monthly (MS)"], index=0,
+            help="Daily: original meter readings. Weekly: summed per week. Monthly: summed per calendar month.")
+        render_help_text("💡 Higher granularity shows more detail but more noise; monthly reveals seasonal trends.")
     
     freq_code = 'D' if "Daily" in resample_freq else ('W' if "Weekly" in resample_freq else 'MS')
     df_resampled = df_daily['consumption_kwh'].resample(freq_code).sum().to_frame()
@@ -395,6 +433,7 @@ elif selected_page == "📊 Electricity Usage":
         use_container_width=True,
         height=300
     )
+    render_help_text("💡 Imputed = True means the value was interpolated due to missing meter data. Original meter readings have Imputed = False.")
 
 
 # =========================================================================
@@ -403,6 +442,7 @@ elif selected_page == "📊 Electricity Usage":
 elif selected_page == "🔄 Consumption Patterns":
     st.markdown("### 🔄 Cyclical Patterns & Classical Time Series Diagnostics")
     st.caption("Decomposition, Stationarity, Diurnal Profiles, and Autocorrelation.")
+    render_help_text("💡 This page reveals the hidden rhythms in your electricity usage. Diurnal = daily cycle, Weekly = weekday/weekend patterns, Monthly = seasonal changes. STL decomposition separates trend, seasonal, and residual components.")
 
     hourly_metrics, fig_hourly = calculate_daily_hourly_pattern(df_hourly if df_hourly is not None else df_daily)
     weekly_metrics, fig_weekly = calculate_weekly_pattern(df_daily['consumption_kwh'])
@@ -412,16 +452,19 @@ elif selected_page == "🔄 Consumption Patterns":
     with p1:
         st.markdown("**Diurnal (24-Hour) Profile**")
         st.plotly_chart(fig_hourly, use_container_width=True)
+        render_help_text("💡 Peak hours typically 7–10 PM (evening activities). Lowest load usually 3–5 AM (base standby).")
     with p2:
         st.markdown("**Day-of-Week Profile (Mon – Sun)**")
         st.plotly_chart(fig_weekly, use_container_width=True)
+        render_help_text("💡 Weekends often show higher consumption due to more time at home.")
 
     st.markdown("**Annual / Monthly Seasonality**")
     st.plotly_chart(fig_monthly, use_container_width=True)
+    render_help_text("💡 Summer peaks from AC usage; winter peaks from heating. Shoulder months (Mar–Apr, Sep–Oct) typically lowest.")
 
     st.markdown("---")
     st.markdown("#### 🔬 Classical Time Series Diagnostics (STL, ADF, KPSS, ACF)")
-    
+
     decomp_res = perform_stl_decomposition(df_daily['consumption_kwh'], period=7)
     adf_res = perform_adf_test(df_daily['consumption_kwh'])
     kpss_res = perform_kpss_test(df_daily['consumption_kwh'])
@@ -434,12 +477,13 @@ elif selected_page == "🔄 Consumption Patterns":
     acf_pacf_res = calculate_acf_pacf(diff_series, nlags=30)
 
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("STL Trend Strength", f"{decomp_res['trend_strength']:.3f}", "F_trend")
-    m2.metric("STL Seasonal Strength", f"{decomp_res['seasonal_strength']:.3f}", "F_season")
-    m3.metric("ADF Test p-value", f"{adf_res['p_value']:.4f}", "Original Series")
-    m4.metric("Post-Diff ADF p-value", f"{adf_diff['p_value']:.4f}", "d=1 Differenced")
+    m1.metric("STL Trend Strength", f"{decomp_res['trend_strength']:.3f}", "F_trend", help="Proportion of variance explained by long-term trend (0–1). Higher = stronger trend.")
+    m2.metric("STL Seasonal Strength", f"{decomp_res['seasonal_strength']:.3f}", "F_season", help="Proportion of variance explained by seasonal cycles (0–1). Higher = more predictable patterns.")
+    m3.metric("ADF Test p-value", f"{adf_res['p_value']:.4f}", "Original Series", help="ADF: p < 0.05 → Stationary. Tests for unit root (non-stationarity).")
+    m4.metric("Post-Diff ADF p-value", f"{adf_diff['p_value']:.4f}", "d=1 Differenced", help="After 1st order + seasonal differencing. Should be < 0.05 for ARIMA modeling.")
 
     st.info(f"**Stationarity Status:** Original Series is `{joint_res['status']}`. After first-order differencing: `{joint_diff['status']}` (suitable for ARIMA/SARIMA).")
+    render_help_text("💡 Stationary series have constant mean/variance over time — required for classical forecasting models. Non-stationary data needs differencing.")
 
 
 # =========================================================================
@@ -467,11 +511,13 @@ elif selected_page == "🔮 Forecasting":
             options=[7, 14, 30],
             default=7,
             format_func=lambda x: f"Next {x} Days",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            help="Select how many days ahead to forecast. 7-day forecasts have highest accuracy."
         ) or 7
+        render_help_text("💡 Shorter horizons are more accurate. Models are retrained automatically when data changes.")
 
     with top_c2:
-        recalibrate = st.button("🔄 Retrain / Re-fit Models", help="Re-runs model benchmark and parameter tuning on the latest dataset.")
+        recalibrate = st.button("🔄 Retrain / Re-fit Models", help="Re-runs model benchmark and parameter tuning on the latest dataset.", use_container_width=True)
 
     if recalibrate:
         st.cache_data.clear()
@@ -549,6 +595,7 @@ elif selected_page == "🔮 Forecasting":
         📈 Household Consumption Trend & Next {horizon_days}-Day Projection
     </div>
     """)
+    render_help_text("💡 Blue line = actual measured data. Amber line = forecast. Shaded band = 95% confidence interval (uncertainty grows with forecast horizon). Dotted vertical line = forecast start.")
 
     recent_hist = df_daily['consumption_kwh'].iloc[-45:].copy()
     fig_fc = go.Figure()
@@ -726,9 +773,12 @@ elif selected_page == "🛡️ Budget Guardian":
             min_value=500.0,
             max_value=25000.0,
             value=2000.0,
-            step=100.0
+            step=100.0,
+            help="Your target monthly electricity spend. The guardian will track actual vs projected spend against this budget."
         )
-        sanctioned_kw = st.selectbox("Sanctioned Load (kW)", [1.0, 2.0, 3.0, 5.0], index=1)
+        render_help_text("💡 Set a realistic budget based on your historical average. The guardian projects end-of-month spend and suggests daily limits.")
+        sanctioned_kw = st.selectbox("Sanctioned Load (kW)", [1.0, 2.0, 3.0, 5.0], index=1,
+            help="Your connection's sanctioned load (from your electricity bill). Affects fixed charges in the bill calculation.")
 
     latest_date = df_daily.index.max()
     latest_month = latest_date.to_period('M')
@@ -808,10 +858,15 @@ elif selected_page == "🧾 Bill Analysis":
     b_col1, b_col2 = st.columns(2)
     with b_col1:
         st.markdown("#### 📄 Utility Paper Bill Details")
-        billed_units = st.number_input("Billed Units (kWh from paper bill)", value=float(round(last_30_kwh * 1.15, 0)), step=10.0)
-        billed_amount = st.number_input("Billed Amount (₹ from paper bill)", value=float(round(expected_default_bill * 1.20, 0)), step=50.0)
-        billing_days = st.number_input("Billing Cycle Days", value=30, min_value=15, max_value=60)
-        sanctioned_load = st.selectbox("Sanctioned Load (kW)", [1.0, 2.0, 3.0, 4.0, 5.0], index=1)
+        billed_units = st.number_input("Billed Units (kWh from paper bill)", value=float(round(last_30_kwh * 1.15, 0)), step=10.0,
+            help="The kWh consumption shown on your paper electricity bill.")
+        render_help_text("💡 Compare this with your smart meter reading below. Differences may indicate billing cycle misalignment or meter reading errors.")
+        billed_amount = st.number_input("Billed Amount (₹ from paper bill)", value=float(round(expected_default_bill * 1.20, 0)), step=50.0,
+            help="The total amount due on your paper electricity bill (including all charges and taxes).")
+        billing_days = st.number_input("Billing Cycle Days", value=30, min_value=15, max_value=60,
+            help="Number of days in the billing period on your paper bill.")
+        sanctioned_load = st.selectbox("Sanctioned Load (kW)", [1.0, 2.0, 3.0, 4.0, 5.0], index=1,
+            help="Your connection's sanctioned load from the electricity bill. Determines fixed charges.")
 
     disc = audit_bill_discrepancy(
         meter_kwh=last_30_kwh,
@@ -853,10 +908,16 @@ elif selected_page == "💡 What-If Simulator":
     sim_c1, sim_c2 = st.columns(2)
     with sim_c1:
         st.markdown("#### ⚙️ Define Energy Interventions")
-        ac_hours = st.slider("Reduce Air Conditioner runtime (Hours / Day)", 0.0, 5.0, 1.5, 0.5)
-        ac_ton = st.selectbox("AC Tonnage / Rating", [1.0, 1.5, 2.0], index=1, format_func=lambda x: f"{x} Ton (~{x*1.0:.1f} kW load)")
-        bldc_fans = st.slider("Switch traditional ceiling fans to 5-Star BLDC (Count)", 0, 6, 2)
-        behavioral_pct = st.slider("General energy conservation (lighting, phantom loads)", 0, 25, 5, 5)
+        ac_hours = st.slider("Reduce Air Conditioner runtime (Hours / Day)", 0.0, 5.0, 1.5, 0.5,
+            help="How many hours per day to reduce AC usage. Typical savings: 1.0–1.5 kW per hour reduced.")
+        render_help_text("💡 Even 1 hour/day reduction can save 30–45 kWh/month for a 1.5 Ton AC.")
+        ac_ton = st.selectbox("AC Tonnage / Rating", [1.0, 1.5, 2.0], index=1, format_func=lambda x: f"{x} Ton (~{x*1.0:.1f} kW load)",
+            help="Your AC's rated capacity. Higher tonnage = more power consumption per hour.")
+        bldc_fans = st.slider("Switch traditional ceiling fans to 5-Star BLDC (Count)", 0, 6, 2,
+            help="Number of ceiling fans to upgrade. BLDC fans use ~45W less than traditional induction fans (75W → 30W).")
+        render_help_text("💡 Each BLDC fan saves ~19 kWh/month assuming 14 hours daily usage.")
+        behavioral_pct = st.slider("General energy conservation (lighting, phantom loads)", 0, 25, 5, 5,
+            help="Percentage reduction from behavioral changes: LED lighting, unplugging devices, efficient appliance use.")
 
     sim_result = run_what_if_simulation(
         baseline_monthly_kwh=monthly_baseline,
@@ -904,6 +965,8 @@ elif selected_page == "📈 Data Quality":
     q2.metric("Total Daily Observations", "56,277 Records", "2019 – 2021")
     q3.metric("Selected Meter Continuity", f"{meta['total_days']} Days", f"Quality Grade {sub_meta['quality_grade']}")
     q4.metric("Interpolated Days", f"{meta['imputed_days']} Days", f"{(meta['imputed_days']/max(meta['total_days'],1))*100:.1f}%")
+
+    render_help_text("💡 Grade A: ≥90% complete, Grade B: ≥75% complete, Grade C: <75% complete. Interpolated days use time-weighted linear interpolation.")
 
     st.markdown("---")
     st.markdown("#### 🏛️ Completeness Distribution Across All Households")
@@ -970,7 +1033,8 @@ elif selected_page == "📑 Reports & Export":
             data=report_md,
             file_name=f"powertrack_report_{selected_hid}.md",
             mime="text/markdown",
-            type="primary"
+            type="primary",
+            help="Complete academic report with all analyses, diagnostics, and model benchmarks in Markdown format."
         )
     with r_col2:
         csv_data = df_daily.reset_index().to_csv(index=False).encode('utf-8')
@@ -978,8 +1042,10 @@ elif selected_page == "📑 Reports & Export":
             label="📥 Download Household Daily Time Series (.CSV)",
             data=csv_data,
             file_name=f"powertrack_daily_{selected_hid}.csv",
-            mime="text/csv"
+            mime="text/csv",
+            help="Clean daily consumption time series with date, household_id, city, consumption_kwh, and imputation flag."
         )
+    render_help_text("💡 The Markdown report can be opened in any text editor or converted to PDF/HTML using tools like Pandoc. CSV is ready for Excel, Python, or R analysis.")
 
     st.markdown("---")
     st.markdown("#### 📄 Report Preview")
