@@ -76,7 +76,9 @@ from utils.helpers import (
     render_skeleton_chart,
     render_skeleton_table,
     show_toast,
-    show_progress
+    show_progress,
+    render_shortcut_help,
+    render_keyboard_shortcuts_modal
 )
 from utils.report_generator import generate_household_report
 
@@ -1050,3 +1052,6 @@ elif selected_page == "📑 Reports & Export":
     st.markdown("---")
     st.markdown("#### 📄 Report Preview")
     st.markdown(report_md)
+
+# Render keyboard shortcuts modal at the end of the app
+render_keyboard_shortcuts_modal()

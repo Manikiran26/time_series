@@ -184,6 +184,102 @@ def render_shortcut_help(shortcuts: list) -> None:
     render_html(html)
 
 
+def render_keyboard_shortcuts_modal() -> None:
+    """Render the keyboard shortcuts modal with full shortcuts list."""
+    shortcuts_by_category = {
+        "Navigation": [
+            (["1"], "Dashboard"),
+            (["2"], "Electricity Usage"),
+            (["3"], "Consumption Patterns"),
+            (["4"], "Forecasting"),
+            (["5"], "Budget Guardian"),
+            (["6"], "Bill Analysis"),
+            (["7"], "What-If Simulator"),
+            (["8"], "Data Quality"),
+            (["9"], "Reports & Export"),
+        ],
+        "Actions": [
+            (["T"], "Toggle Theme (Dark/Light)"),
+            (["R"], "Refresh / Retrain Models"),
+            (["E"], "Export Report"),
+            (["C"], "Copy Chart Data"),
+        ],
+        "Global": [
+            (["?"], "Show/Hide This Help"),
+            (["Esc"], "Close Modals / Dismiss Toasts"),
+            (["Ctrl/Cmd + K"], "Command Palette (Future)"),
+        ],
+    }
+
+    category_html = ""
+    for category, shortcuts in shortcuts_by_category.items():
+        category_html += f'<div class="powertrack-shortcut-category">{category}</div>'
+        for keys, desc in shortcuts:
+            if isinstance(keys, str):
+                keys = [keys]
+            kbd_html = ''.join(f'<kbd class="powertrack-kbd">{k}</kbd>' for k in keys)
+            category_html += f'''
+            <div class="powertrack-shortcut-item">
+                <div class="powertrack-shortcut-keys">{kbd_html}</div>
+                <div class="powertrack-shortcut-desc">{desc}</div>
+            </div>
+            '''
+
+    html = f"""
+    <div class="powertrack-shortcuts-overlay" id="shortcuts-overlay" onclick="document.getElementById('shortcuts-overlay').classList.remove('visible')">
+        <div class="powertrack-shortcuts-modal" onclick="event.stopPropagation()">
+            <div class="powertrack-shortcuts-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <button class="powertrack-shortcuts-close" onclick="document.getElementById('shortcuts-overlay').classList.remove('visible')" aria-label="Close shortcuts help">×</button>
+            </div>
+            <div class="powertrack-shortcuts-list">
+                {category_html}
+            </div>
+        </div>
+    </div>
+    <script>
+        // Toggle shortcuts modal with ? key
+        document.addEventListener('keydown', function(e) {{
+            if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {{
+                const overlay = document.getElementById('shortcuts-overlay');
+                if (overlay) {{
+                    overlay.classList.toggle('visible');
+                }}
+            }}
+            // Close with Escape
+            if (e.key === 'Escape') {{
+                const overlay = document.getElementById('shortcuts-overlay');
+                if (overlay && overlay.classList.contains('visible')) {{
+                    overlay.classList.remove('visible');
+                }}
+            }}
+        }});
+
+        // Navigation shortcuts (1-9)
+        document.addEventListener('keydown', function(e) {{
+            if (e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.metaKey && !e.altKey) {{
+                const navItems = document.querySelectorAll('div[role="radiogroup"] label');
+                const index = parseInt(e.key) - 1;
+                if (navItems[index]) {{
+                    navItems[index].click();
+                }}
+            }}
+        }});
+
+        // Theme toggle with T
+        document.addEventListener('keydown', function(e) {{
+            if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {{
+                const themeBtn = document.querySelector('button[key="theme_toggle"]');
+                if (themeBtn) {{
+                    themeBtn.click();
+                }}
+            }}
+        }});
+    </script>
+    """
+    render_html(html)
+
+
 def render_html(html_str: str):
     """
     Renders HTML safely to Streamlit.
