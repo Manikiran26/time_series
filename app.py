@@ -172,33 +172,10 @@ with st.sidebar:
         "🔄 Consumption Patterns",
         "🔮 Forecasting",
         "🛡️ Budget Guardian",
-        "🧾 Bill Analysis",
         "💡 What-If Simulator",
-        "📈 Data Quality",
         "📑 Reports & Export"
     ]
     selected_page = st.radio("Navigation", options=nav_options, label_visibility="collapsed")
-
-    st.markdown("---")
-    render_html("""
-    <div style="font-size: 0.74rem; color: #64748b; line-height: 1.45;">
-        <b>Dataset:</b> CEEW Smart-Meter Study<br>
-        <b>Source:</b> Harvard Dataverse (CC0 1.0)<br>
-        <b>Tariff:</b> UPPCL LMV-1 Domestic Slabs
-    </div>
-    """)
-
-    # Keyboard shortcuts help
-    with st.expander("⌨️ Keyboard Shortcuts", expanded=False):
-        render_shortcut_help([
-            (["D"], "Toggle Dashboard"),
-            (["F"], "Open Forecasting"),
-            (["B"], "Open Budget Guardian"),
-            (["W"], "Open What-If Simulator"),
-            (["R"], "Open Reports"),
-            (["T"], "Toggle Theme (Dark/Light)"),
-            (["?"], "Show this help"),
-        ])
 
 
 # =========================================================================
@@ -613,21 +590,6 @@ elif selected_page == "🔮 Forecasting":
     test_met = fc_res['test_metrics']
     model_comp = fc_res['model_comparison']
     insights = fc_res['insights']
-
-    # Model Active Status Bar
-    accuracy_pct = max(0.0, min(100.0, 100.0 - test_met['mape']))
-    render_html(f"""
-    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--accent-primary); padding: 12px 20px; border-radius: 14px; margin: 10px 0 20px 0; box-shadow: 0 2px 10px -2px var(--shadow-card);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="height: 8px; width: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; display: inline-block;"></span>
-            <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">Optimal Model Active: <span style="color: var(--accent-primary);">{best_m}</span></span>
-            <span style="font-size: 0.78rem; color: var(--text-muted);">• Trained on {fc_res['metadata']['total_observations']} historical days</span>
-        </div>
-        <div style="font-size: 0.82rem; color: var(--text-muted);">
-            Test Set Accuracy: <span style="color: #10b981; font-weight: 700;">{accuracy_pct:.1f}%</span> (Held-out RMSE: {test_met['rmse']:.2f} kWh)
-        </div>
-    </div>
-    """)
 
     # 4 Clean Consumer KPI Cards
     k1, k2, k3, k4 = st.columns(4)
@@ -1138,6 +1100,3 @@ elif selected_page == "📑 Reports & Export":
     st.markdown("---")
     st.markdown("#### 📄 Report Preview")
     st.markdown(report_md)
-
-# Render keyboard shortcuts modal at the end of the app
-render_keyboard_shortcuts_modal()
