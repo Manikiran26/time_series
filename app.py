@@ -27,9 +27,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize theme in session state
+# Initialize theme in session state - default to modern light card aesthetic matching reference design
 if 'theme' not in st.session_state:
-    st.session_state.theme = 'dark'  # default
+    st.session_state.theme = 'light'
+
+if 'card1_unit' not in st.session_state:
+    st.session_state.card1_unit = '₹'
 
 # Core Module Imports
 from analysis.household_preprocessing import (
@@ -71,6 +74,9 @@ from utils.helpers import (
     render_consumption_pattern_box,
     render_insights_cards,
     get_powertrack_css,
+    plot_card1_mini_area_chart,
+    render_card2_appliance_breakdown,
+    render_card3_household_performance,
     render_skeleton,
     render_skeleton_card,
     render_skeleton_chart,
@@ -91,22 +97,22 @@ st.markdown(get_powertrack_css(st.session_state.theme), unsafe_allow_html=True)
 # =========================================================================
 with st.sidebar:
     # Theme toggle at the top
-    theme_col1, theme_col2 = st.columns([3, 1])
+    theme_col1, theme_col2 = st.columns([2.8, 1.2])
     with theme_col1:
         render_html("""
         <div style="padding: 4px 0 14px 0;">
-            <div style="font-size: 1.65rem; font-weight: 800; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 1.65rem; font-weight: 800; background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
                 ⚡ PowerTrack
             </div>
-            <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 500; margin-top: 2px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">
                 Household Smart-Energy Analytics
             </div>
         </div>
         """)
     with theme_col2:
-        theme_label = "☀️ Light" if st.session_state.theme == 'dark' else "🌙 Dark"
+        theme_label = "🌙 Dark" if st.session_state.theme == 'light' else "☀️ Light"
         if st.button(theme_label, key="theme_toggle", help="Toggle dark/light mode", use_container_width=True):
-            st.session_state.theme = 'light' if st.session_state.theme == 'dark' else 'dark'
+            st.session_state.theme = 'dark' if st.session_state.theme == 'light' else 'light'
             st.rerun()
 
     st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
@@ -141,22 +147,22 @@ with st.sidebar:
     if sub_meta:
         grade_color = "#10b981" if sub_meta['quality_grade'] == 'A' else ("#f59e0b" if sub_meta['quality_grade'] == 'B' else "#ef4444")
         render_html(f"""
-        <div style="background: rgba(30, 41, 59, 0.65); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px;">
+        <div style="background: var(--bg-tertiary); padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border-subtle); margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.8rem; color: #94a3b8;">Location:</span>
-                <span style="font-size: 0.84rem; font-weight: 600; color: #f8fafc;">{sub_meta['city']}, UP</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Location:</span>
+                <span style="font-size: 0.84rem; font-weight: 600; color: var(--text-primary);">{sub_meta['city']}, UP</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 0.8rem; color: #94a3b8;">Record Span:</span>
-                <span style="font-size: 0.84rem; font-weight: 600; color: #38bdf8;">{sub_meta['recorded_days']} Days</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Record Span:</span>
+                <span style="font-size: 0.84rem; font-weight: 600; color: var(--accent-primary);">{sub_meta['recorded_days']} Days</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 0.8rem; color: #94a3b8;">Historical Avg:</span>
-                <span style="font-size: 0.84rem; font-weight: 600; color: #f8fafc;">{sub_meta['mean_kwh']:.2f} kWh/day</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Historical Avg:</span>
+                <span style="font-size: 0.84rem; font-weight: 600; color: var(--text-primary);">{sub_meta['mean_kwh']:.2f} kWh/day</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 0.8rem; color: #94a3b8;">Data Integrity:</span>
-                <span style="font-size: 0.78rem; font-weight: 700; color: {grade_color}; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.05);">Grade {sub_meta['quality_grade']}</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Data Integrity:</span>
+                <span style="font-size: 0.78rem; font-weight: 700; color: {grade_color}; padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,0.05);">Grade {sub_meta['quality_grade']}</span>
             </div>
         </div>
         """)
@@ -220,13 +226,13 @@ except Exception as e:
 
 
 # Top Application Header
-render_powertrack_header(user_name=f"Household {selected_hid} • {meta['city']}")
+render_powertrack_header(user_name=f"Household {selected_hid} • {meta['city']}", theme=st.session_state.theme)
 
 # Status Bar
 render_html(f"""
-<div style="background: rgba(15, 23, 42, 0.45); border-left: 3px solid #38bdf8; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; color: #94a3b8; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-    <span>📡 <b>Empirical Smart-Meter Monitoring:</b> Continuous high-resolution telemetry (CEEW / Harvard Dataverse).</span>
-    <span style="color: #cbd5e1;">Active Unit: <b>{selected_hid}</b> | City: <b>{meta['city']}</b></span>
+<div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--accent-primary); padding: 10px 18px; border-radius: 14px; font-size: 0.84rem; color: var(--text-muted); margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px -2px var(--shadow-card);">
+    <span>📡 <b style="color: var(--text-primary);">Empirical Smart-Meter Monitoring:</b> Continuous high-resolution telemetry (CEEW / Harvard Dataverse).</span>
+    <span style="color: var(--text-secondary);">Active Unit: <b style="color: var(--text-primary);">{selected_hid}</b> | City: <b style="color: var(--text-primary);">{meta['city']}</b></span>
 </div>
 """)
 
@@ -235,6 +241,91 @@ render_html(f"""
 # 1. PAGE: DASHBOARD
 # =========================================================================
 if selected_page == "⚡ Dashboard":
+    # Calculate real household metrics
+    latest_date = df_daily.index.max()
+    today_usage_kwh = float(df_daily.loc[latest_date, 'consumption_kwh'])
+    
+    # Month to date
+    latest_month = latest_date.to_period('M')
+    month_mask = df_daily.index.to_period('M') == latest_month
+    month_kwh = float(df_daily.loc[month_mask, 'consumption_kwh'].sum())
+    month_bill_est = calculate_electricity_bill(month_kwh)['total_bill']
+    effective_rate = (month_bill_est / max(month_kwh, 1.0)) if month_kwh > 0 else 6.50
+    today_cost_inr = today_usage_kwh * effective_rate
+
+    # Default slice for initial view (30 days)
+    df_slice_hero = df_daily.iloc[-30:].copy()
+    hero_kwh = float(df_slice_hero['consumption_kwh'].sum())
+    hero_baseline_kwh = float(meta['mean_daily_kwh'] * 30.0)
+
+    # -----------------------------------------------------------------
+    # HERO SECTION: 3 MODERN CARDS (MATCHING REFERENCE DESIGN)
+    # -----------------------------------------------------------------
+    dash_hero1, dash_hero2, dash_hero3 = st.columns([1.25, 1.1, 1.1])
+
+    with dash_hero1:
+        with st.container(border=True):
+            h_c1, h_c2 = st.columns([1.8, 1.2])
+            with h_c1:
+                if st.session_state.card1_unit == '₹':
+                    m_val = f"₹ {today_cost_inr:.2f}"
+                    m_sub = "Total cost"
+                else:
+                    m_val = f"{today_usage_kwh:.2f} kWh"
+                    m_sub = "Total energy"
+                render_html(f"""
+                <div>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">{m_val}</div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 4px; margin-top: 2px;">
+                        {m_sub} <span style="font-size: 0.85rem; opacity: 0.7;">ⓘ</span>
+                    </div>
+                </div>
+                """)
+            with h_c2:
+                sel_unit = st.segmented_control(
+                    "Unit Toggle",
+                    options=["₹", "kWh"],
+                    default=st.session_state.card1_unit,
+                    key="hero_card_unit_toggle",
+                    label_visibility="collapsed"
+                ) or st.session_state.card1_unit
+                if sel_unit != st.session_state.card1_unit:
+                    st.session_state.card1_unit = sel_unit
+                    st.rerun()
+
+            unit_str = "INR" if st.session_state.card1_unit == "₹" else "kWh"
+            fig_card1 = plot_card1_mini_area_chart(
+                df_hourly=df_hourly,
+                df_slice=df_slice_hero,
+                unit_mode=unit_str,
+                theme=st.session_state.theme,
+                tariff_rate=effective_rate
+            )
+            st.plotly_chart(fig_card1, use_container_width=True, config={'displayModeBar': False})
+
+    with dash_hero2:
+        with st.container(border=True):
+            render_card2_appliance_breakdown(
+                total_kwh=hero_kwh,
+                theme=st.session_state.theme
+            )
+
+    with dash_hero3:
+        with st.container(border=True):
+            render_card3_household_performance(
+                current_kwh=hero_kwh,
+                baseline_kwh=hero_baseline_kwh,
+                household_id=selected_hid,
+                city=meta['city'],
+                sanctioned_load_kw=1.8,
+                theme=st.session_state.theme
+            )
+
+    st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+
+    # -----------------------------------------------------------------
+    # DETAILED CONSUMPTION & TIME WINDOW ANALYSIS
+    # -----------------------------------------------------------------
     col_dash_title, col_dash_filter = st.columns([1.8, 1.2])
     with col_dash_filter:
         range_options = ["7 Days", "30 Days", "3 Months", "1 Year", "All History"]
@@ -251,18 +342,15 @@ if selected_page == "⚡ Dashboard":
     n_days = range_map.get(selected_range, 30)
     df_slice = df_daily.iloc[-n_days:].copy()
 
-    # Calculate real KPI metrics
-    latest_date = df_daily.index.max()
-    today_usage_kwh = float(df_daily.loc[latest_date, 'consumption_kwh'])
-    
-    # Month to date
-    latest_month = latest_date.to_period('M')
-    month_mask = df_daily.index.to_period('M') == latest_month
-    month_kwh = float(df_daily.loc[month_mask, 'consumption_kwh'].sum())
-    month_bill_est = calculate_electricity_bill(month_kwh)['total_bill']
-    
     avg_daily_kwh = float(df_slice['consumption_kwh'].mean())
     peak_daily_kwh = float(df_slice['consumption_kwh'].max())
+
+    with col_dash_title:
+        render_html(f"""
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+            Electricity Consumption — Last {selected_range}
+        </div>
+        """)
 
     # KPI Summary Cards
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
@@ -297,14 +385,7 @@ if selected_page == "⚡ Dashboard":
 
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-    with col_dash_title:
-        render_html(f"""
-        <div style="font-size: 1.25rem; font-weight: 700; color: #f8fafc;">
-            Electricity Consumption — Last {selected_range}
-        </div>
-        """)
-
-    fig_main = plot_main_consumption_chart(df_slice, range_label=selected_range)
+    fig_main = plot_main_consumption_chart(df_slice, range_label=selected_range, theme=st.session_state.theme)
     st.plotly_chart(fig_main, use_container_width=True)
 
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
@@ -346,19 +427,19 @@ if selected_page == "⚡ Dashboard":
     recent_anom = get_recent_anomalies_summary(df_anom, limit=3)
     if recent_anom:
         render_html("""
-        <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             ⚠️ Unusual Consumption Flags
         </div>
         """)
         for a in recent_anom:
             sev_color = "#ef4444" if a['severity'] == 'High' else "#f59e0b"
             render_html(f"""
-            <div style="background: rgba(30, 41, 59, 0.45); border-left: 4px solid {sev_color}; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 4px solid {sev_color}; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px -2px var(--shadow-card);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 600; color: #f8fafc;">{a['date']} ({a['day']}) — <span style="color: {sev_color};">{a['type']}</span></span>
-                    <span style="font-size: 0.85rem; color: #94a3b8;">Recorded: <b>{a['actual_kwh']:.1f} kWh</b> (Baseline: {a['expected_kwh']:.1f} kWh)</span>
+                    <span style="font-weight: 600; color: var(--text-primary);">{a['date']} ({a['day']}) — <span style="color: {sev_color};">{a['type']}</span></span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Recorded: <b>{a['actual_kwh']:.1f} kWh</b> (Baseline: {a['expected_kwh']:.1f} kWh)</span>
                 </div>
-                <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 4px;">{a['explanation']}</div>
+                <div style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 4px;">{a['explanation']}</div>
             </div>
             """)
 
@@ -493,12 +574,12 @@ elif selected_page == "🔄 Consumption Patterns":
 # =========================================================================
 elif selected_page == "🔮 Forecasting":
     render_html(f"""
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
         <div>
-            <div style="font-size: 1.6rem; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                 🔮 Household Electricity Consumption Forecast
             </div>
-            <div style="font-size: 0.88rem; color: #94a3b8; margin-top: 2px;">
+            <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 2px;">
                 Multi-model machine learning & statistical forecast tailored to Household <b>{selected_hid}</b>'s historical load habits.
             </div>
         </div>
@@ -538,13 +619,13 @@ elif selected_page == "🔮 Forecasting":
     # Model Active Status Bar
     accuracy_pct = max(0.0, min(100.0, 100.0 - test_met['mape']))
     render_html(f"""
-    <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%); border: 1px solid rgba(56, 189, 248, 0.18); padding: 10px 18px; border-radius: 12px; margin: 10px 0 18px 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--accent-primary); padding: 12px 20px; border-radius: 14px; margin: 10px 0 20px 0; box-shadow: 0 2px 10px -2px var(--shadow-card);">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="height: 8px; width: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; display: inline-block;"></span>
-            <span style="font-size: 0.88rem; color: #f8fafc; font-weight: 600;">Optimal Model Active: <span style="color: #38bdf8;">{best_m}</span></span>
-            <span style="font-size: 0.78rem; color: #94a3b8;">• Trained on {fc_res['metadata']['total_observations']} historical days</span>
+            <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">Optimal Model Active: <span style="color: var(--accent-primary);">{best_m}</span></span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">• Trained on {fc_res['metadata']['total_observations']} historical days</span>
         </div>
-        <div style="font-size: 0.82rem; color: #94a3b8;">
+        <div style="font-size: 0.82rem; color: var(--text-muted);">
             Test Set Accuracy: <span style="color: #10b981; font-weight: 700;">{accuracy_pct:.1f}%</span> (Held-out RMSE: {test_met['rmse']:.2f} kWh)
         </div>
     </div>
@@ -593,7 +674,7 @@ elif selected_page == "🔮 Forecasting":
 
     # Interactive Forecast Line Chart
     render_html(f"""
-    <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+    <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
         📈 Household Consumption Trend & Next {horizon_days}-Day Projection
     </div>
     """)
@@ -601,6 +682,13 @@ elif selected_page == "🔮 Forecasting":
 
     recent_hist = df_daily['consumption_kwh'].iloc[-45:].copy()
     fig_fc = go.Figure()
+    is_light = (st.session_state.theme == 'light')
+
+    hist_line_col = '#0284c7' if is_light else '#38bdf8'
+    plot_bg = '#ffffff' if is_light else 'rgba(15, 23, 42, 0.5)'
+    paper_bg = '#ffffff' if is_light else 'rgba(0,0,0,0)'
+    font_col = '#0f172a' if is_light else '#f8fafc'
+    grid_col = '#f1f5f9' if is_light else 'rgba(148, 163, 184, 0.15)'
 
     # Historical metered trace
     fig_fc.add_trace(go.Scatter(
@@ -608,7 +696,7 @@ elif selected_page == "🔮 Forecasting":
         y=recent_hist.values,
         mode='lines',
         name='Historical Measured',
-        line=dict(color='#38bdf8', width=2.2, shape='spline'),
+        line=dict(color=hist_line_col, width=2.2, shape='spline'),
         hovertemplate='<b>Date:</b> %{x|%d %b %Y}<br><b>Actual:</b> %{y:.1f} kWh<extra></extra>'
     ))
 
@@ -673,13 +761,13 @@ elif selected_page == "🔮 Forecasting":
     )
 
     fig_fc.update_layout(
-        paper_bgcolor=CHART_THEME['paper_color'],
-        plot_bgcolor='rgba(15, 23, 42, 0.5)',
-        font=dict(family=CHART_THEME['font_family'], color=CHART_THEME['font_color']),
+        paper_bgcolor=paper_bg,
+        plot_bgcolor=plot_bg,
+        font=dict(family='Inter, sans-serif', color=font_col),
         hovermode="x unified",
         margin=dict(l=35, r=20, t=25, b=35),
-        xaxis=dict(gridcolor=CHART_THEME['grid_color'], showgrid=True),
-        yaxis=dict(title="Daily Consumption (kWh)", gridcolor=CHART_THEME['grid_color'], showgrid=True),
+        xaxis=dict(gridcolor=grid_col, showgrid=True),
+        yaxis=dict(title="Daily Consumption (kWh)", gridcolor=grid_col, showgrid=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     st.plotly_chart(fig_fc, use_container_width=True)
@@ -689,7 +777,7 @@ elif selected_page == "🔮 Forecasting":
 
     # Actionable Household Insights
     render_html("""
-    <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin: 24px 0 12px 0;">
+    <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 24px 0 12px 0;">
         💡 Forecast Action Insights & Recommendations
     </div>
     """)
@@ -697,33 +785,33 @@ elif selected_page == "🔮 Forecasting":
     ins_c1, ins_c2, ins_c3 = st.columns(3)
     with ins_c1:
         render_html(f"""
-        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
-            <div style="display: flex; align-items: center; gap: 8px; color: #38bdf8; font-weight: 700; font-size: 0.92rem;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 18px; height: 100%; box-shadow: 0 2px 10px -2px var(--shadow-card);">
+            <div style="display: flex; align-items: center; gap: 8px; color: var(--accent-primary); font-weight: 700; font-size: 0.92rem;">
                 <span>📅</span> Weekly Pace
             </div>
-            <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 8px; line-height: 1.45;">
+            <div style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.45;">
                 {insights[0]}
             </div>
         </div>
         """)
     with ins_c2:
         render_html(f"""
-        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 18px; height: 100%; box-shadow: 0 2px 10px -2px var(--shadow-card);">
             <div style="display: flex; align-items: center; gap: 8px; color: #f59e0b; font-weight: 700; font-size: 0.92rem;">
                 <span>⚡</span> Peak Demand Day
             </div>
-            <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 8px; line-height: 1.45;">
+            <div style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.45;">
                 {insights[1]} Avoid running high-wattage water heaters or washing machines simultaneously during evening peak hours.
             </div>
         </div>
         """)
     with ins_c3:
         render_html(f"""
-        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; height: 100%;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 18px; height: 100%; box-shadow: 0 2px 10px -2px var(--shadow-card);">
             <div style="display: flex; align-items: center; gap: 8px; color: #10b981; font-weight: 700; font-size: 0.92rem;">
                 <span>🌱</span> Energy Saving Tip
             </div>
-            <div style="font-size: 0.86rem; color: #cbd5e1; margin-top: 8px; line-height: 1.45;">
+            <div style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.45;">
                 {insights[2]} Keeping air-conditioner set temperatures at 24°C–26°C will help keep this household inside UPPCL Slab 1 or 2.
             </div>
         </div>
@@ -800,9 +888,9 @@ elif selected_page == "🛡️ Budget Guardian":
 
     # Alert Banner
     render_html(f"""
-    <div style="background: rgba(30, 41, 59, 0.6); border-left: 5px solid {bg['status_color']}; padding: 14px 18px; border-radius: 10px; margin: 16px 0;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 5px solid {bg['status_color']}; padding: 14px 18px; border-radius: 14px; margin: 16px 0; box-shadow: 0 2px 10px -2px var(--shadow-card);">
         <div style="font-size: 1.1rem; font-weight: 700; color: {bg['status_color']};">{bg['status']}</div>
-        <div style="font-size: 0.9rem; color: #f8fafc; margin-top: 4px;">{bg['alert_msg']}</div>
+        <div style="font-size: 0.9rem; color: var(--text-primary); margin-top: 4px;">{bg['alert_msg']}</div>
     </div>
     """)
 

@@ -47,7 +47,8 @@ def get_consumption_summary_stats(series: pd.Series) -> Dict[str, float]:
 
 def plot_main_consumption_chart(
     df_slice: pd.DataFrame,
-    range_label: str = "Last 30 Days"
+    range_label: str = "Last 30 Days",
+    theme: str = "light"
 ) -> go.Figure:
     """
     Main interactive electricity consumption line chart for PowerTrack.
@@ -64,6 +65,14 @@ def plot_main_consumption_chart(
         y_vals = df_slice['Global_active_power'] * 24.0
 
     mean_val = float(y_vals.mean())
+    is_light = (theme == 'light')
+
+    line_col = '#0284c7' if is_light else '#38bdf8'
+    fill_col = 'rgba(2, 132, 199, 0.08)' if is_light else 'rgba(56, 189, 248, 0.08)'
+    font_col = '#0f172a' if is_light else '#f8fafc'
+    grid_col = '#f1f5f9' if is_light else 'rgba(148, 163, 184, 0.15)'
+    plot_bg = '#ffffff' if is_light else 'rgba(15, 23, 42, 0.5)'
+    paper_bg = '#ffffff' if is_light else 'rgba(0,0,0,0)'
 
     # Filled area under the curve
     fig.add_trace(go.Scatter(
@@ -71,9 +80,9 @@ def plot_main_consumption_chart(
         y=y_vals,
         mode='lines',
         name='Daily Consumption',
-        line=dict(color='#38bdf8', width=2.5, shape='spline'),
+        line=dict(color=line_col, width=2.5, shape='spline'),
         fill='tozeroy',
-        fillcolor='rgba(56, 189, 248, 0.08)',
+        fillcolor=fill_col,
         hovertemplate='<b>Date:</b> %{x|%d %b %Y}<br><b>Consumption:</b> %{y:.1f} kWh<extra></extra>'
     ))
 
@@ -81,27 +90,27 @@ def plot_main_consumption_chart(
     fig.add_hline(
         y=mean_val,
         line_dash="dash",
-        line_color="#f59e0b",
+        line_color="#d97706" if is_light else "#f59e0b",
         annotation_text=f"Average: {mean_val:.1f} kWh",
         annotation_position="top left",
-        annotation_font_color="#f59e0b",
+        annotation_font_color="#d97706" if is_light else "#f59e0b",
         annotation_font_size=11
     )
 
     fig.update_layout(
-        paper_bgcolor=CHART_THEME['paper_color'],
-        plot_bgcolor='rgba(15, 23, 42, 0.5)',
-        font=dict(family=CHART_THEME['font_family'], color=CHART_THEME['font_color']),
+        paper_bgcolor=paper_bg,
+        plot_bgcolor=plot_bg,
+        font=dict(family=CHART_THEME['font_family'], color=font_col),
         hovermode="x unified",
         margin=dict(l=40, r=25, t=25, b=40),
         xaxis=dict(
-            gridcolor=CHART_THEME['grid_color'],
+            gridcolor=grid_col,
             showgrid=True,
             type="date"
         ),
         yaxis=dict(
             title="Consumption (kWh)",
-            gridcolor=CHART_THEME['grid_color'],
+            gridcolor=grid_col,
             zeroline=False,
             showgrid=True
         ),

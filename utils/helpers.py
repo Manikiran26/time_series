@@ -5,9 +5,11 @@ Guarantees clean HTML rendering without Markdown whitespace/codeblock distortion
 """
 
 import re
-import streamlit as st
+import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List
+import plotly.graph_objects as go
+import streamlit as st
+from typing import Dict, Any, Optional, List, Tuple
 from contextlib import contextmanager
 
 
@@ -289,23 +291,30 @@ def render_html(html_str: str):
     st.markdown(clean, unsafe_allow_html=True)
 
 
-def render_powertrack_header(user_name: str = "Manikiran"):
+def render_powertrack_header(user_name: str = "Manikiran", theme: str = "light"):
     """Render the official PowerTrack application header with live smart meter status."""
+    is_light = (theme == 'light')
+    header_bg = "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)" if is_light else "linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.85) 100%)"
+    border_color = "rgba(2, 132, 199, 0.15)" if is_light else "rgba(56, 189, 248, 0.2)"
+    shadow_val = "0 10px 25px -5px rgba(0, 0, 0, 0.04)" if is_light else "0 10px 30px -10px rgba(0, 0, 0, 0.6)"
+    text_color = "#0f172a" if is_light else "#f8fafc"
+    sub_color = "#64748b" if is_light else "#94a3b8"
+
     html = f"""
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.85) 100%); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; margin-bottom: 22px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 26px; background: {header_bg}; border: 1px solid {border_color}; border-radius: 20px; margin-bottom: 22px; box-shadow: {shadow_val};">
         <div>
-            <div style="font-size: 2.0rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 2.0rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
                 ⚡ PowerTrack
             </div>
-            <div style="font-size: 0.88rem; color: #94a3b8; font-weight: 500; margin-top: 2px;">
+            <div style="font-size: 0.88rem; color: {sub_color}; font-weight: 500; margin-top: 2px;">
                 Household Smart-Meter Analytics, Forecasting & Cost Management
             </div>
         </div>
         <div style="text-align: right;">
-            <div style="font-size: 1.1rem; font-weight: 600; color: #f8fafc;">
+            <div style="font-size: 1.1rem; font-weight: 700; color: {text_color};">
                 {user_name}
             </div>
-            <div style="font-size: 0.8rem; color: #10b981; display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+            <div style="font-size: 0.8rem; color: #10b981; display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 4px; font-weight: 600;">
                 <span style="height: 7px; width: 7px; background-color: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #10b981;"></span>
                 Smart Meter Active
             </div>
@@ -316,17 +325,17 @@ def render_powertrack_header(user_name: str = "Manikiran"):
 
 
 def render_summary_card(title: str, value: str, subtext: Optional[str] = None, icon: str = "⚡", delta: Optional[str] = None):
-    """Render consumer-grade KPI summary card with clean HTML styling."""
-    subtext_html = f'<div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{subtext}</div>' if subtext else ""
-    delta_html = f'<span style="font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; margin-right: 6px;">{delta}</span>' if delta else ""
+    """Render consumer-grade KPI summary card with clean modern styling."""
+    subtext_html = f'<div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{subtext}</div>' if subtext else ""
+    delta_html = f'<span style="font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: var(--accent-primary); margin-right: 6px;">{delta}</span>' if delta else ""
     
     html = f"""
-    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 16px 18px; box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.4); min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 18px 20px; box-shadow: 0 4px 20px -3px var(--shadow-card); min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.82rem; font-weight: 600; color: #94a3b8;">{title}</span>
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">{title}</span>
             <div>{delta_html}<span style="font-size: 1.15rem; opacity: 0.85;">{icon}</span></div>
         </div>
-        <div style="font-size: 1.85rem; font-weight: 800; color: #f8fafc; margin-top: 4px; letter-spacing: -0.02em;">
+        <div style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em;">
             {value}
         </div>
         {subtext_html}
@@ -337,20 +346,20 @@ def render_summary_card(title: str, value: str, subtext: Optional[str] = None, i
 
 def render_forecast_kpi_card(title: str, value: str, subtext: str, delta: Optional[str] = None, delta_type: str = "good", icon: str = "🔮"):
     """Sleek KPI card specially tailored for future forecasting."""
-    delta_bg = "rgba(16, 185, 129, 0.15)" if delta_type == "good" else ("rgba(239, 68, 68, 0.15)" if delta_type == "bad" else "rgba(56, 189, 248, 0.15)")
-    delta_color = "#10b981" if delta_type == "good" else ("#ef4444" if delta_type == "bad" else "#38bdf8")
+    delta_bg = "rgba(16, 185, 129, 0.12)" if delta_type == "good" else ("rgba(239, 68, 68, 0.12)" if delta_type == "bad" else "rgba(14, 165, 233, 0.12)")
+    delta_color = "#10b981" if delta_type == "good" else ("#ef4444" if delta_type == "bad" else "#0284c7")
     delta_badge = f'<span style="font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 12px; background: {delta_bg}; color: {delta_color}; margin-right: 6px;">{delta}</span>' if delta else ""
 
     html = f"""
-    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 14px; padding: 16px 18px; box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.4); min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 18px 20px; box-shadow: 0 4px 20px -3px var(--shadow-card); min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.82rem; font-weight: 600; color: #94a3b8;">{title}</span>
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">{title}</span>
             <div>{delta_badge}<span style="font-size: 1.15rem;">{icon}</span></div>
         </div>
-        <div style="font-size: 1.85rem; font-weight: 800; color: #f8fafc; margin-top: 4px; letter-spacing: -0.02em;">
+        <div style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em;">
             {value}
         </div>
-        <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             {subtext}
         </div>
     </div>
@@ -402,26 +411,26 @@ def render_consumption_pattern_box(
     trend_status: str
 ):
     """Render clean summary box for Consumption Pattern."""
-    trend_color = "#10b981" if trend_status == "Decreasing" else ("#f59e0b" if trend_status == "Stable" else "#38bdf8")
+    trend_color = "#10b981" if trend_status == "Decreasing" else ("#f59e0b" if trend_status == "Stable" else "#0ea5e9")
     html = f"""
-    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.7) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px 20px; margin: 18px 0; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);">
-        <div style="font-size: 1.1rem; font-weight: 700; color: #f8fafc; margin-bottom: 14px;">📊 Consumption Pattern Summary</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-            <div style="background: rgba(15, 23, 42, 0.65); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #f59e0b;">
-                <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 500;">Diurnal Peak Hours</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: #f8fafc; margin-top: 2px;">{peak_hours}</div>
+    <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 22px 24px; margin: 20px 0; box-shadow: 0 4px 20px -2px var(--shadow-card);">
+        <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">📊 Consumption Pattern Summary</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+            <div style="background: var(--bg-tertiary); padding: 14px 16px; border-radius: 14px; border-left: 4px solid #f59e0b;">
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Diurnal Peak Hours</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-top: 4px;">{peak_hours}</div>
             </div>
-            <div style="background: rgba(15, 23, 42, 0.65); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #38bdf8;">
-                <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 500;">Lowest Standby Hours</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: #f8fafc; margin-top: 2px;">{lowest_hours}</div>
+            <div style="background: var(--bg-tertiary); padding: 14px 16px; border-radius: 14px; border-left: 4px solid #0ea5e9;">
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Lowest Standby Hours</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-top: 4px;">{lowest_hours}</div>
             </div>
-            <div style="background: rgba(15, 23, 42, 0.65); padding: 12px 14px; border-radius: 10px; border-left: 3px solid #818cf8;">
-                <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 500;">Highest Load Day</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: #f8fafc; margin-top: 2px;">{highest_day}</div>
+            <div style="background: var(--bg-tertiary); padding: 14px 16px; border-radius: 14px; border-left: 4px solid #8b5cf6;">
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Highest Load Day</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-top: 4px;">{highest_day}</div>
             </div>
-            <div style="background: rgba(15, 23, 42, 0.65); padding: 12px 14px; border-radius: 10px; border-left: 3px solid {trend_color};">
-                <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 500;">Overall Trajectory</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: {trend_color}; margin-top: 2px;">{trend_status}</div>
+            <div style="background: var(--bg-tertiary); padding: 14px 16px; border-radius: 14px; border-left: 4px solid {trend_color};">
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Overall Trajectory</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: {trend_color}; margin-top: 4px;">{trend_status}</div>
             </div>
         </div>
     </div>
@@ -432,7 +441,7 @@ def render_consumption_pattern_box(
 def render_insights_cards(insights: list):
     """Render clean, natural-language insights cards."""
     st.markdown("""
-    <div style="font-size: 1.1rem; font-weight: 700; color: #f8fafc; margin: 20px 0 12px 0;">
+    <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 24px 0 14px 0;">
         💡 Actionable Consumption Insights
     </div>
     """, unsafe_allow_html=True)
@@ -441,12 +450,12 @@ def render_insights_cards(insights: list):
     for i, ins in enumerate(insights[:3]):
         with cols[i]:
             html = f"""
-            <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.65) 100%); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 14px 16px; height: 100%; box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.25);">
-                <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #38bdf8; font-size: 0.9rem;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 16px 18px; height: 100%; box-shadow: 0 4px 16px -2px var(--shadow-card);">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent-primary); font-size: 0.92rem;">
                     <span>{ins.get('icon', '💡')}</span>
                     <span>{ins.get('title', 'Insight')}</span>
                 </div>
-                <div style="font-size: 0.84rem; color: #cbd5e1; margin-top: 6px; line-height: 1.45;">
+                <div style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.5;">
                     {ins.get('text', '')}
                 </div>
             </div>
@@ -456,15 +465,247 @@ def render_insights_cards(insights: list):
     if len(insights) > 3:
         for ins in insights[3:]:
             html = f"""
-            <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.55) 100%); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 12px 16px; margin-top: 8px; display: flex; align-items: flex-start; gap: 10px;">
-                <span style="font-size: 1.15rem;">{ins.get('icon', '💡')}</span>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px 18px; margin-top: 10px; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 2px 10px -2px var(--shadow-card);">
+                <span style="font-size: 1.2rem;">{ins.get('icon', '💡')}</span>
                 <div>
-                    <div style="font-weight: 600; color: #f8fafc; font-size: 0.88rem;">{ins.get('title', 'Insight')}</div>
-                    <div style="font-size: 0.84rem; color: #94a3b8; margin-top: 2px; line-height: 1.4;">{ins.get('text', '')}</div>
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">{ins.get('title', 'Insight')}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 3px; line-height: 1.45;">{ins.get('text', '')}</div>
                 </div>
             </div>
             """
             render_html(html)
+
+
+def plot_card1_mini_area_chart(
+    df_hourly: Optional[pd.DataFrame] = None,
+    df_slice: Optional[pd.DataFrame] = None,
+    unit_mode: str = "INR",
+    theme: str = "light",
+    tariff_rate: float = 6.50
+) -> go.Figure:
+    """
+    Renders the modern mini area curve for Card 1 matching the reference image:
+    - Mint-green spline filled area curve
+    - Charcoal line overlay
+    - Clean dual-axis layout or clean x-axis (00, 06, 12, 18, 24)
+    - Hover tooltip popover
+    """
+    fig = go.Figure()
+
+    if df_hourly is not None and not df_hourly.empty:
+        df_h = df_hourly.copy()
+        val_col = 'hourly_kwh' if 'hourly_kwh' in df_h.columns else ('power_kw' if 'power_kw' in df_h.columns else 'consumption_kwh')
+        if 'Hour' not in df_h.columns:
+            if 'timestamp' in df_h.columns and pd.api.types.is_datetime64_any_dtype(df_h['timestamp']):
+                df_h['Hour'] = pd.to_datetime(df_h['timestamp']).dt.hour
+            elif hasattr(df_h.index, 'hour'):
+                df_h['Hour'] = df_h.index.hour
+            else:
+                df_h['Hour'] = np.arange(len(df_h)) % 24
+        
+        hourly_grp = df_h.groupby('Hour')[val_col].mean().reindex(range(24), fill_value=0.05)
+        x_ticks = [f"{h:02d}" for h in range(24)]
+        y_energy = hourly_grp.values
+    elif df_slice is not None and not df_slice.empty:
+        x_ticks = [d.strftime('%d %b') for d in df_slice.index[-14:]]
+        y_energy = df_slice['consumption_kwh'].iloc[-14:].values
+    else:
+        x_ticks = [f"{h:02d}" for h in range(24)]
+        y_energy = np.array([0.02, 0.02, 0.02, 0.03, 0.04, 0.32, 0.25, 0.21, 0.19, 0.20, 0.12, 0.05, 0.05, 0.06, 0.08, 0.07, 0.06, 0.06, 0.05, 0.05, 0.06, 0.07, 0.03, 0.02])
+
+    if unit_mode == "INR":
+        y_main = y_energy * tariff_rate
+        main_unit = "₹"
+        main_name = "Hourly Cost"
+        hover_main = "₹%{y:.2f}"
+        rate_overlay = np.full_like(y_main, tariff_rate)
+    else:
+        y_main = y_energy
+        main_unit = "kWh"
+        main_name = "Hourly Energy"
+        hover_main = "%{y:.3f} kWh"
+        rate_overlay = np.full_like(y_main, float(np.mean(y_energy)))
+
+    # Main Area Trace (Mint / Teal gradient)
+    fig.add_trace(go.Scatter(
+        x=x_ticks,
+        y=y_main,
+        mode='lines',
+        name=main_name,
+        line=dict(color='#10b981', width=2.5, shape='spline'),
+        fill='tozeroy',
+        fillcolor='rgba(16, 185, 129, 0.16)',
+        hovertemplate='<b>%{x}:00</b><br><span style="color:#10b981">●</span> ' + hover_main + '<extra></extra>'
+    ))
+
+    # Secondary Charcoal / Slate Overlay Line (Matching the reference screenshot!)
+    is_light = (theme == 'light')
+    line_overlay_color = '#1e293b' if is_light else '#cbd5e1'
+    fig.add_trace(go.Scatter(
+        x=x_ticks,
+        y=rate_overlay if unit_mode == "INR" else y_main * 1.15,
+        mode='lines',
+        name='Tariff Rate (₹/kWh)' if unit_mode == "INR" else 'Baseline Pace',
+        line=dict(color=line_overlay_color, width=2.2, shape='spline'),
+        yaxis='y2' if unit_mode == "INR" else 'y',
+        hovertemplate='<b>Rate:</b> ₹%{y:.2f}/kWh (UPPCL)<extra></extra>' if unit_mode == "INR" else '<b>Baseline:</b> %{y:.2f} kWh<extra></extra>'
+    ))
+
+    font_color = '#0f172a' if is_light else '#f8fafc'
+    grid_color = '#f1f5f9' if is_light else 'rgba(148, 163, 184, 0.12)'
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family='Inter, -apple-system, sans-serif', color=font_color, size=11),
+        margin=dict(l=30, r=30, t=10, b=25),
+        height=260,
+        showlegend=False,
+        hovermode="x unified",
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            tickmode='array',
+            tickvals=['00', '06', '12', '18', '24'] if len(x_ticks) == 24 else x_ticks[::max(1, len(x_ticks)//4)],
+            tickfont=dict(color='#64748b', size=11)
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor=grid_color,
+            zeroline=False,
+            showline=False,
+            tickfont=dict(color='#64748b', size=10),
+            nticks=4
+        ),
+        yaxis2=dict(
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            overlaying='y',
+            side='right',
+            tickfont=dict(color='#64748b', size=10),
+            nticks=4
+        ) if unit_mode == "INR" else None
+    )
+
+    return fig
+
+
+def render_card2_appliance_breakdown(
+    total_kwh: float,
+    theme: str = "light"
+):
+    """
+    Card 2 from reference design: 'What consumed the most?'
+    Displays 5 categories with circular outline badges, percentages, and mint-green rounded progress bars.
+    """
+    total_ref = max(total_kwh, 25.0)
+    appliances = [
+        {"name": "Heating / AC", "icon": "🌡️", "pct": 31, "kwh": total_ref * 0.31},
+        {"name": "Cooking", "icon": "🍳", "pct": 28, "kwh": total_ref * 0.28},
+        {"name": "Lights & Fans", "icon": "💡", "pct": 16, "kwh": total_ref * 0.16},
+        {"name": "Hot water & Pump", "icon": "🚿", "pct": 10, "kwh": total_ref * 0.10},
+        {"name": "Laundry & Fridge", "icon": "🧺", "pct": 6, "kwh": total_ref * 0.06},
+    ]
+
+    items_html = ""
+    for app in appliances:
+        items_html += f"""
+        <div style="margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--border-subtle); background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+                        {app['icon']}
+                    </div>
+                    <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">{app['name']}: {int(app['kwh'])} kWh</span>
+                </div>
+                <span style="font-size: 0.92rem; font-weight: 600; color: var(--text-secondary);">{app['pct']}%</span>
+            </div>
+            <div style="height: 7px; width: calc(100% - 50px); margin-left: 50px; background: var(--bg-tertiary); border-radius: 9999px; overflow: hidden;">
+                <div style="height: 100%; width: {app['pct']}%; background: #10b981; border-radius: 9999px;"></div>
+            </div>
+        </div>
+        """
+
+    html = f"""
+    <div>
+        <div style="text-align: center; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 22px;">
+            What consumed the most?
+        </div>
+        {items_html}
+    </div>
+    """
+    render_html(html)
+
+
+def render_card3_household_performance(
+    current_kwh: float,
+    baseline_kwh: float,
+    household_id: str,
+    city: str,
+    sanctioned_load_kw: float = 1.8,
+    theme: str = "light"
+):
+    """
+    Card 3 from reference design: Individual Household Baseline Comparison
+    (Strictly for individual house insights - NOT similar homes!)
+    Features the dual rounded pillar bars (blue & pink) with floating house badge.
+    """
+    diff_pct = ((current_kwh - baseline_kwh) / max(baseline_kwh, 1.0)) * 100.0
+    if diff_pct <= 0:
+        headline = f"Good job! You've consumed <span style='color: #10b981; font-weight: 700;'>{abs(diff_pct):.0f}% less</span> energy than your historical baseline."
+    else:
+        headline = f"Notice: You've consumed <span style='color: #f59e0b; font-weight: 700;'>{diff_pct:.0f}% more</span> energy than your historical baseline."
+
+    # Compute bar heights (max height 135px, min 38px)
+    max_val = max(current_kwh, baseline_kwh, 1.0)
+    h_current = int(max(38, (current_kwh / max_val) * 135))
+    h_baseline = int(max(38, (baseline_kwh / max_val) * 135))
+
+    html = f"""
+    <div>
+        <div style="text-align: center; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
+            Comparison with your baseline
+        </div>
+        <div style="text-align: center; font-size: 0.90rem; color: var(--text-secondary); margin-bottom: 22px; line-height: 1.4; padding: 0 8px;">
+            {headline}
+        </div>
+
+        <div style="display: flex; justify-content: center; align-items: flex-end; gap: 32px; height: 160px; margin-bottom: 20px; position: relative;">
+            <!-- Floating house badge on top of baseline bar -->
+            <div style="position: absolute; right: calc(50% - 74px); bottom: {h_baseline + 8}px; width: 34px; height: 34px; border-radius: 50%; background: var(--bg-secondary); border: 2px solid #ec4899; box-shadow: 0 4px 12px rgba(236,72,153,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; z-index: 2;">
+                🏠
+            </div>
+
+            <!-- Left Bar: Your home (Blue) -->
+            <div style="display: flex; flex-direction: column; align-items: center; width: 84px;">
+                <div style="width: 76px; height: {h_current}px; background: #38bdf8; border-radius: 20px; box-shadow: 0 8px 20px rgba(56,189,248,0.3);"></div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-top: 10px;">{int(current_kwh)} kWh</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500;">Your home</div>
+            </div>
+
+            <!-- Right Bar: Your baseline (Pink) -->
+            <div style="display: flex; flex-direction: column; align-items: center; width: 84px;">
+                <div style="width: 76px; height: {h_baseline}px; background: #ec4899; border-radius: 20px; box-shadow: 0 8px 20px rgba(236,72,153,0.3);"></div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-top: 10px;">{int(baseline_kwh)} kWh</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500;">Your baseline</div>
+            </div>
+        </div>
+
+        <!-- Home Profile Footer -->
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 8px;">
+            <div style="font-size: 0.80rem; color: var(--text-muted); font-weight: 500;">Home profile used for comparison:</div>
+            <div style="font-size: 0.86rem; font-weight: 600; color: var(--text-primary); margin-top: 2px;">
+                Household {household_id}, {city} UP • {sanctioned_load_kw:.1f} kW Sanctioned Load
+            </div>
+            <div style="margin-top: 8px;">
+                <span style="font-size: 0.86rem; font-weight: 600; color: #0284c7; cursor: pointer;">Update home profile</span>
+            </div>
+        </div>
+    </div>
+    """
+    render_html(html)
 
 
 def get_powertrack_css(theme: str = 'dark') -> str:
@@ -507,15 +748,15 @@ def get_powertrack_css(theme: str = 'dark') -> str:
             'shadow_card': 'rgba(0, 0, 0, 0.3)',
         }
     else:
-        # Light theme colors
+        # Light theme colors - Modern Card Design System
         colors = {
             'bg_primary': '#f8fafc',
             'bg_secondary': '#ffffff',
             'bg_tertiary': '#f1f5f9',
-            'bg_card': 'rgba(255, 255, 255, 0.9)',
-            'bg_card_hover': 'rgba(248, 250, 252, 0.95)',
+            'bg_card': '#ffffff',
+            'bg_card_hover': '#ffffff',
             'bg_sidebar': '#ffffff',
-            'border_subtle': 'rgba(15, 23, 42, 0.08)',
+            'border_subtle': '#f1f5f9',
             'border_accent': 'rgba(2, 132, 199, 0.2)',
             'text_primary': '#0f172a',
             'text_secondary': '#334155',
@@ -525,22 +766,22 @@ def get_powertrack_css(theme: str = 'dark') -> str:
             'accent_secondary': '#6366f1',
             'accent_warning': '#d97706',
             'accent_danger': '#dc2626',
-            'accent_success': '#059669',
-            'btn_bg': 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-            'btn_hover': 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-            'btn_border': 'rgba(2, 132, 199, 0.25)',
-            'input_bg': 'rgba(255, 255, 255, 0.9)',
-            'input_border': 'rgba(2, 132, 199, 0.15)',
-            'segmented_bg': '#e2e8f0',
+            'accent_success': '#10b981',
+            'btn_bg': '#ffffff',
+            'btn_hover': '#f8fafc',
+            'btn_border': '#e2e8f0',
+            'input_bg': '#ffffff',
+            'input_border': '#e2e8f0',
+            'segmented_bg': '#f1f5f9',
             'segmented_selected': '#0284c7',
-            'expander_bg': '#f1f5f9',
-            'chart_bg': 'rgba(248, 250, 252, 0.5)',
-            'chart_paper': 'rgba(255,255,255,1)',
-            'grid_color': 'rgba(15, 23, 42, 0.1)',
-            'scrollbar_track': '#f1f5f9',
+            'expander_bg': '#ffffff',
+            'chart_bg': '#ffffff',
+            'chart_paper': '#ffffff',
+            'grid_color': '#f1f5f9',
+            'scrollbar_track': '#f8fafc',
             'scrollbar_thumb': '#cbd5e1',
-            'shadow': 'rgba(0, 0, 0, 0.1)',
-            'shadow_card': 'rgba(0, 0, 0, 0.08)',
+            'shadow': 'rgba(0, 0, 0, 0.08)',
+            'shadow_card': 'rgba(0, 0, 0, 0.04)',
         }
 
     return f"""
@@ -616,23 +857,36 @@ def get_powertrack_css(theme: str = 'dark') -> str:
         outline-offset: 2px;
     }}
 
+    /* Streamlit Bordered Container / Modern Card Styling */
+    [data-testid="stVerticalBlockBorderWrapper"] > div {{
+        background-color: var(--bg-card) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 24px !important;
+        padding: 22px 24px !important;
+        box-shadow: 0 10px 25px -5px var(--shadow-card), 0 0 1px 1px var(--border-subtle) !important;
+        transition: all 0.2s ease !important;
+    }}
+
     /* Segmented controls / pill selectors */
     div[data-baseweb="segmented-control"] {{
         background-color: var(--segmented-bg) !important;
-        border-radius: 10px !important;
+        border-radius: 9999px !important;
         padding: 3px !important;
         border: 1px solid var(--border-subtle) !important;
     }}
 
     div[data-baseweb="segmented-control"] button {{
-        border-radius: 7px !important;
-        font-weight: 600 !important;
+        border-radius: 9999px !important;
+        font-weight: 700 !important;
         color: var(--text-muted) !important;
+        padding: 4px 14px !important;
+        font-size: 0.85rem !important;
     }}
 
     div[data-baseweb="segmented-control"] button[aria-selected="true"] {{
         background-color: var(--segmented-selected) !important;
         color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
     }}
 
     div[data-baseweb="segmented-control"] button:focus {{
