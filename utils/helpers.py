@@ -871,22 +871,40 @@ def get_powertrack_css(theme: str = 'dark') -> str:
     div[data-baseweb="segmented-control"] {{
         background-color: var(--segmented-bg) !important;
         border-radius: 9999px !important;
-        padding: 3px !important;
+        padding: 4px !important;
         border: 1px solid var(--border-subtle) !important;
     }}
 
     div[data-baseweb="segmented-control"] button {{
         border-radius: 9999px !important;
         font-weight: 700 !important;
-        color: var(--text-muted) !important;
-        padding: 4px 14px !important;
+        color: var(--text-secondary) !important;
+        padding: 5px 16px !important;
         font-size: 0.85rem !important;
+        background: transparent !important;
+        background-color: transparent !important;
+    }}
+
+    div[data-baseweb="segmented-control"] button div,
+    div[data-baseweb="segmented-control"] button p {{
+        color: var(--text-secondary) !important;
+        font-weight: 700 !important;
     }}
 
     div[data-baseweb="segmented-control"] button[aria-selected="true"] {{
         background-color: var(--segmented-selected) !important;
         color: #ffffff !important;
         box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+    }}
+
+    div[data-baseweb="segmented-control"] button[aria-selected="true"] div,
+    div[data-baseweb="segmented-control"] button[aria-selected="true"] p {{
+        color: #ffffff !important;
+    }}
+
+    div[data-baseweb="segmented-control"] button[aria-selected="false"] {{
+        background: transparent !important;
+        background-color: transparent !important;
     }}
 
     div[data-baseweb="segmented-control"] button:focus {{
@@ -898,7 +916,11 @@ def get_powertrack_css(theme: str = 'dark') -> str:
     div[data-baseweb="select"] > div {{
         background-color: var(--input-bg) !important;
         border: 1px solid var(--input-border) !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
+        color: var(--text-primary) !important;
+    }}
+
+    div[data-baseweb="select"] * {{
         color: var(--text-primary) !important;
     }}
 
@@ -931,7 +953,7 @@ def get_powertrack_css(theme: str = 'dark') -> str:
 
     /* Plotly chart container */
     .js-plotly-plot {{
-        border-radius: 12px;
+        border-radius: 16px;
         overflow: hidden;
         background-color: var(--chart-bg) !important;
     }}
@@ -939,10 +961,11 @@ def get_powertrack_css(theme: str = 'dark') -> str:
     /* Expander styling for internal diagnostics */
     .streamlit-expanderHeader {{
         background-color: var(--expander-bg) !important;
-        border-radius: 10px !important;
-        color: var(--text-muted) !important;
+        border-radius: 12px !important;
+        color: var(--text-primary) !important;
         font-size: 0.9rem !important;
         border: 1px solid var(--border-subtle) !important;
+        font-weight: 600 !important;
     }}
 
     .streamlit-expanderHeader:focus {{
@@ -950,16 +973,50 @@ def get_powertrack_css(theme: str = 'dark') -> str:
         outline-offset: 2px;
     }}
 
-    /* Sidebar polish */
+    /* Sidebar text & label visibility */
     section[data-testid="stSidebar"] {{
-        background-color: var(--bg-sidebar);
-        border-right: 1px solid var(--border-subtle);
+        background-color: var(--bg-sidebar) !important;
+        border-right: 1px solid var(--border-subtle) !important;
+    }}
+
+    section[data-testid="stSidebar"] * {{
+        color: var(--text-primary);
+    }}
+
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] label p,
+    section[data-testid="stSidebar"] label span,
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span {{
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Radio navigation list in sidebar */
+    div[role="radiogroup"] label,
+    div[role="radiogroup"] label p,
+    div[role="radiogroup"] label div,
+    div[role="radiogroup"] label span,
+    div[role="radiogroup"] [data-testid="stMarkdownContainer"] p {{
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+    }}
+
+    div[role="radiogroup"] label:hover {{
+        background: var(--bg-tertiary) !important;
+        border-radius: 10px !important;
+    }}
+
+    div[role="radiogroup"] label:has(input:checked) p {{
+        color: var(--accent-primary) !important;
+        font-weight: 700 !important;
     }}
 
     /* Dataframe styling */
     .stDataFrame {{
         background-color: var(--bg-card) !important;
-        border-radius: 12px;
+        border-radius: 14px;
         border: 1px solid var(--border-subtle);
     }}
 
@@ -968,16 +1025,13 @@ def get_powertrack_css(theme: str = 'dark') -> str:
         background-color: var(--accent-primary) !important;
     }}
 
-    /* Radio buttons */
-    div[role="radiogroup"] label {{
-        color: var(--text-primary) !important;
-    }}
-
     /* Metrics */
     [data-testid="stMetric"] {{
         background-color: var(--bg-card) !important;
         border: 1px solid var(--border-subtle) !important;
-        border-radius: 12px !important;
+        border-radius: 18px !important;
+        padding: 16px !important;
+    }}
         padding: 16px !important;
     }}
 

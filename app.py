@@ -67,6 +67,7 @@ from analysis.billing_tariffs import (
 )
 from utils.helpers import (
     render_html,
+    render_help_text,
     render_powertrack_header,
     render_summary_card,
     render_forecast_kpi_card,
@@ -96,26 +97,23 @@ st.markdown(get_powertrack_css(st.session_state.theme), unsafe_allow_html=True)
 # SIDEBAR: HOUSEHOLD SELECTION & NAVIGATION
 # =========================================================================
 with st.sidebar:
-    # Theme toggle at the top
-    theme_col1, theme_col2 = st.columns([2.8, 1.2])
-    with theme_col1:
-        render_html("""
-        <div style="padding: 4px 0 14px 0;">
-            <div style="font-size: 1.65rem; font-weight: 800; background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
-                ⚡ PowerTrack
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">
-                Household Smart-Energy Analytics
-            </div>
+    # Sidebar Brand Header & Theme Toggle
+    render_html("""
+    <div style="padding: 6px 0 10px 0;">
+        <div style="font-size: 1.7rem; font-weight: 800; background: linear-gradient(90deg, #0284c7 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px;">
+            ⚡ PowerTrack
         </div>
-        """)
-    with theme_col2:
-        theme_label = "🌙 Dark" if st.session_state.theme == 'light' else "☀️ Light"
-        if st.button(theme_label, key="theme_toggle", help="Toggle dark/light mode", use_container_width=True):
-            st.session_state.theme = 'dark' if st.session_state.theme == 'light' else 'light'
-            st.rerun()
+        <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">
+            Household Smart-Energy Analytics
+        </div>
+    </div>
+    """)
+    theme_label = "🌙 Switch to Dark Mode" if st.session_state.theme == 'light' else "☀️ Switch to Light Mode"
+    if st.button(theme_label, key="theme_toggle", help="Toggle dark/light mode", use_container_width=True):
+        st.session_state.theme = 'dark' if st.session_state.theme == 'light' else 'light'
+        st.rerun()
 
-    st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
     # City filter
     city_filter = st.selectbox(
