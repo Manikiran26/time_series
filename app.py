@@ -471,16 +471,6 @@ elif selected_page == "📊 Electricity Usage":
         )
         st.plotly_chart(fig_cum, use_container_width=True)
 
-    # Statistical Summary
-    stats = get_consumption_summary_stats(df_daily['consumption_kwh'])
-    st.markdown("#### 📐 Statistical Distribution Properties")
-    s_col1, s_col2, s_col3, s_col4, s_col5 = st.columns(5)
-    s_col1.metric("Mean Daily", f"{stats['mean']:.2f} kWh")
-    s_col2.metric("Median Daily", f"{stats['median']:.2f} kWh")
-    s_col3.metric("Std Dev (Volatility)", f"{stats['std']:.2f} kWh")
-    s_col4.metric("IQR", f"{stats['iqr']:.2f} kWh")
-    s_col5.metric("Skewness", f"{stats['skewness']:.2f}")
-
     # Raw Data Explorer
     st.markdown("---")
     st.markdown("#### 📋 Raw Meter Readings Table")
