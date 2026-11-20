@@ -488,8 +488,8 @@ elif selected_page == "📊 Electricity Usage":
 # 3. PAGE: CONSUMPTION PATTERNS & CLASSICAL TIME SERIES
 # =========================================================================
 elif selected_page == "🔄 Consumption Patterns":
-    st.markdown("### 🔄 Cyclical Patterns & Classical Time Series Diagnostics")
-    st.caption("Decomposition, Stationarity, Diurnal Profiles, and Autocorrelation.")
+    st.markdown("### 🔄 Consumption & Cyclical Patterns")
+    st.caption("Diurnal (24-Hour), Day-of-Week, and Monthly Seasonality Profiles.")
     render_help_text("💡 This page reveals the hidden rhythms in your electricity usage. Diurnal = daily cycle, Weekly = weekday/weekend patterns, Monthly = seasonal changes. STL decomposition separates trend, seasonal, and residual components.")
 
     hourly_metrics, fig_hourly = calculate_daily_hourly_pattern(df_hourly if df_hourly is not None else df_daily)
@@ -510,28 +510,7 @@ elif selected_page == "🔄 Consumption Patterns":
     st.plotly_chart(fig_monthly, use_container_width=True)
     render_help_text("💡 Summer peaks from AC usage; winter peaks from heating. Shoulder months (Mar–Apr, Sep–Oct) typically lowest.")
 
-    st.markdown("---")
-    st.markdown("#### 🔬 Classical Time Series Diagnostics (STL, ADF, KPSS, ACF)")
 
-    decomp_res = perform_stl_decomposition(df_daily['consumption_kwh'], period=7)
-    adf_res = perform_adf_test(df_daily['consumption_kwh'])
-    kpss_res = perform_kpss_test(df_daily['consumption_kwh'])
-    joint_res = evaluate_joint_stationarity(adf_res, kpss_res)
-
-    diff_series, diff_desc = apply_differencing(df_daily['consumption_kwh'], order=1, seasonal_lag=7)
-    adf_diff = perform_adf_test(diff_series)
-    kpss_diff = perform_kpss_test(diff_series)
-    joint_diff = evaluate_joint_stationarity(adf_diff, kpss_diff)
-    acf_pacf_res = calculate_acf_pacf(diff_series, nlags=30)
-
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("STL Trend Strength", f"{decomp_res['trend_strength']:.3f}", "F_trend", help="Proportion of variance explained by long-term trend (0–1). Higher = stronger trend.")
-    m2.metric("STL Seasonal Strength", f"{decomp_res['seasonal_strength']:.3f}", "F_season", help="Proportion of variance explained by seasonal cycles (0–1). Higher = more predictable patterns.")
-    m3.metric("ADF Test p-value", f"{adf_res['p_value']:.4f}", "Original Series", help="ADF: p < 0.05 → Stationary. Tests for unit root (non-stationarity).")
-    m4.metric("Post-Diff ADF p-value", f"{adf_diff['p_value']:.4f}", "d=1 Differenced", help="After 1st order + seasonal differencing. Should be < 0.05 for ARIMA modeling.")
-
-    st.info(f"**Stationarity Status:** Original Series is `{joint_res['status']}`. After first-order differencing: `{joint_diff['status']}` (suitable for ARIMA/SARIMA).")
-    render_help_text("💡 Stationary series have constant mean/variance over time — required for classical forecasting models. Non-stationary data needs differencing.")
 
 
 # =========================================================================
