@@ -23,3 +23,11 @@ Thumbs.db
 
 # Streamlit local state
 .streamlit/
+
+# Generated reports and notebooks
+PowerTrack_Final_Project_Report*
+*.ipynb
+*.html
+*.pdf
+dataset_line_plot.png
+model_benchmark_results.png
